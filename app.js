@@ -111,25 +111,26 @@ function startScanner() {
     html5QrcodeScanner = new Html5Qrcode("reader");
     
     const config = { 
-        // 15 FPS is the sweet spot. 30 FPS can choke mobile processors, 
-        // causing dropped frames and actually making scanning SLOWER.
-        fps: 15, 
+        fps: 15, // High enough to catch motion, low enough not to crash the browser
+        qrbox: { width: 300, height: 150 }, // Wider box so EAN edges don't get cut off
         
-        // A wide rectangle is perfectly optimized for 1D EAN barcodes
-        qrbox: { width: 250, height: 100 }, 
-        aspectRatio: 1.0,
-        
-        // HUGE PERFORMANCE BOOST: Only run EAN decoding algorithms
+        // ONLY look for German/European barcodes
         formatsToSupport: [
             Html5QrcodeSupportedFormats.EAN_13,
             Html5QrcodeSupportedFormats.EAN_8
-        ]
+        ],
+
+        // ABSOLUTE FASTEST SETTING: 
+        // Bypasses JavaScript math and forces your phone's native OS scanner
+        experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true
+        }
     };
 
     html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess)
         .catch(fatalError => {
-            console.error("Camera failed to start:", fatalError);
-            alert("Failed to start camera. Please check permissions.");
+            console.error("Camera failed:", fatalError);
+            alert("Camera error. Please ensure permissions are granted.");
             resetScannerUI();
         });
 }

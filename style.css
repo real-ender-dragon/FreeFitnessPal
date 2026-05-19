@@ -126,3 +126,11 @@ h1 {
 #torch-btn:active {
     background-color: #24a143;
 }
+
+.verified-icon {
+    width: 16px;
+    height: 16px;
+    object-fit: contain; /* Ensures the image doesn't stretch */
+    vertical-align: middle;
+    margin-left: 6px;
+}

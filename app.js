@@ -75,11 +75,15 @@ searchInput.addEventListener('input', async (e) => {
             return;
         }
 
+        // Update this block inside your searchInput.addEventListener
         searchResults.innerHTML = results.map(food => `
             <li onclick="selectFood('${food.i}')">
-                <span class="food-name">${food.n} <span class="verified-icon">✔️</span></span>
+                <span class="food-name">
+                    ${food.n} 
+                    <img src="./light-blue_checkmark.png" class="verified-icon" alt="Verified">
+                </span>
                 <span class="food-macros">
-                    🔥 ${food.k} kcal | P: ${food.p}g | C: ${food.c}g | F: ${food.f}g
+                    ${food.k} kcal | P: ${food.p}g | C: ${food.c}g | F: ${food.f}g
                 </span>
                 <span class="source-label">BLS Database (Verified)</span>
             </li>
@@ -101,18 +105,15 @@ let html5QrcodeScanner;
 let isTorchOn = false;
 
 function startScanner() {
-    // Hide the scan button and show the torch button while scanning
     document.getElementById('start-scan-btn').style.display = 'none';
     document.getElementById('torch-btn').style.display = 'block';
 
     html5QrcodeScanner = new Html5Qrcode("reader");
     
-    // MASSIVE PERFORMANCE BOOST: 
-    // 1. Triple the FPS.
-    // 2. Only search for grocery barcodes (EAN 13 and EAN 8).
+    // Narrower height forces the library to process a smaller, denser area
     const config = { 
         fps: 30, 
-        qrbox: { width: 300, height: 150 }, // Wider box for EAN barcodes
+        qrbox: { width: 250, height: 100 }, 
         aspectRatio: 1.0,
         formatsToSupport: [
             Html5QrcodeSupportedFormats.EAN_13,
@@ -120,8 +121,16 @@ function startScanner() {
         ]
     };
 
+    // THE FIX: Force 1080p HD resolution and continuous auto-focus for small barcodes
+    const cameraConstraints = {
+        facingMode: "environment",
+        width: { ideal: 1920, min: 1280 },
+        height: { ideal: 1080, min: 720 },
+        advanced: [{ focusMode: "continuous" }]
+    };
+
     html5QrcodeScanner.start(
-        { facingMode: "environment" }, 
+        cameraConstraints, 
         config, 
         onScanSuccess
     ).catch(err => {

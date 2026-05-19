@@ -50,95 +50,124 @@ async function initializeApp() {
 // Fire the bootstrapper when the script loads
 initializeApp();
 
-// --- SEARCH UI LOGIC ---
-
+// ==========================================
+// SEARCH UI LOGIC (Pure Local BLS)
+// ==========================================
 const searchInput = document.getElementById('food-search');
 const searchResults = document.getElementById('search-results');
-
-let searchTimeout;
-let currentLocalResults = [];
 
 searchInput.addEventListener('input', async (e) => {
     const query = e.target.value.toLowerCase().trim();
     
     if (query.length < 2) {
         searchResults.innerHTML = '';
-        clearTimeout(searchTimeout);
         return;
     }
 
     try {
-        // 1. Instant Offline Search (BLS Data)
-        currentLocalResults = await db.foods
+        const results = await db.foods
             .filter(food => food.n.toLowerCase().includes(query))
-            .limit(10)
+            .limit(15)
             .toArray();
 
-        // Render local results instantly while we wait for the internet
-        renderCombinedResults(currentLocalResults, []);
+        if (results.length === 0) {
+            searchResults.innerHTML = '<li><span class="food-macros">No foods found locally.</span></li>';
+            return;
+        }
 
-        // 2. Debounced Online Search (Open Food Facts API)
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(async () => {
-            try {
-                const offResults = await fetchOpenFoodFacts(query);
-                // Re-render with both local and online results
-                renderCombinedResults(currentLocalResults, offResults);
-            } catch (err) {
-                console.error("OFF API Error:", err);
-            }
-        }, 600); // Waits 600ms after you stop typing
-
+        searchResults.innerHTML = results.map(food => `
+            <li onclick="selectFood('${food.i}')">
+                <span class="food-name">${food.n} <span class="verified-icon">✔️</span></span>
+                <span class="food-macros">
+                    🔥 ${food.k} kcal | P: ${food.p}g | C: ${food.c}g | F: ${food.f}g
+                </span>
+                <span class="source-label">BLS Database (Verified)</span>
+            </li>
+        `).join('');
     } catch (error) {
         console.error('Search failed:', error);
     }
 });
 
-// Helper function to fetch from Open Food Facts
-async function fetchOpenFoodFacts(query) {
-    const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=10`);
-    const data = await res.json();
-    
-    // Map the bloated OFF data to our clean Big 7 structure
-    return data.products
-        .filter(p => p.product_name) // Skip items with no name
-        .map(p => ({
-            i: p.code,
-            n: p.product_name,
-            k: Math.round(p.nutriments['energy-kcal_100g'] || 0),
-            p: Math.round((p.nutriments.proteins_100g || 0) * 10) / 10,
-            c: Math.round((p.nutriments.carbohydrates_100g || 0) * 10) / 10,
-            f: Math.round((p.nutriments.fat_100g || 0) * 10) / 10,
-            isOff: true // Custom flag so we know it came from the internet
-        }));
-}
-
-function renderCombinedResults(local, online) {
-    const allResults = [...local, ...online];
-
-    if (allResults.length === 0) {
-        searchResults.innerHTML = '<li><span class="food-macros">No foods found.</span></li>';
-        return;
-    }
-
-    searchResults.innerHTML = allResults.map(food => {
-        // Use the blue checkmark for BLS, and a package icon for Open Food Facts
-        const icon = food.isOff ? '📦' : '<span class="verified-icon">✔️</span>';
-        const sourceText = food.isOff ? 'Open Food Facts' : 'BLS Database (Verified)';
-
-        return `
-            <li onclick="selectFood('${food.i}')">
-                <span class="food-name">${food.n} ${icon}</span>
-                <span class="food-macros">
-                    🔥 ${food.k} kcal | P: ${food.p}g | C: ${food.c}g | F: ${food.f}g
-                </span>
-                <span class="source-label">${sourceText}</span>
-            </li>
-        `;
-    }).join('');
-}
-
 function selectFood(id) {
     console.log('You selected food ID:', id);
     alert(`Selected ID: ${id}`);
+}
+
+// ==========================================
+// BARCODE SCANNER LOGIC
+// ==========================================
+let html5QrcodeScanner;
+
+function startScanner() {
+    // Initialize the scanner
+    html5QrcodeScanner = new Html5Qrcode("reader");
+    
+    const config = { 
+        fps: 10, 
+        qrbox: { width: 250, height: 150 },
+        aspectRatio: 1.0
+    };
+
+    html5QrcodeScanner.start(
+        { facingMode: "environment" }, // Forces rear camera
+        config, 
+        onScanSuccess
+    ).catch(err => {
+        console.error("Camera start failed:", err);
+        alert("Camera permission denied or unsupported.");
+    });
+}
+
+async function onScanSuccess(decodedText, decodedResult) {
+    // 1. Immediately stop the camera once a barcode is detected
+    html5QrcodeScanner.stop();
+    console.log(`Scanned Barcode: ${decodedText}`);
+
+    // 2. CHECK LOCAL DATABASE FIRST
+    const localHit = await db.foods.get(decodedText);
+    
+    if (localHit) {
+        alert(`Loaded instantly from local database!\n\n${localHit.n}\nCalories: ${localHit.k}`);
+        return; 
+    }
+
+    // 3. API FALLBACK (Open Food Facts v2 API)
+    console.log("Barcode not found locally. Fetching from Open Food Facts...");
+    try {
+        // The v2 endpoint is stable and does not suffer from the 503 CORS text-search issues
+        const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${decodedText}`);
+        const data = await res.json();
+
+        if (data.status === 1) {
+            const p = data.product;
+            
+            // Map their data directly to our Big 7 schema
+            const newFood = {
+                i: decodedText, // The barcode is the primary key
+                n: p.product_name || "Unknown Product",
+                k: Math.round(p.nutriments['energy-kcal_100g'] || 0),
+                p: Math.round((p.nutriments.proteins_100g || 0) * 10) / 10,
+                c: Math.round((p.nutriments.carbohydrates_100g || 0) * 10) / 10,
+                su: Math.round((p.nutriments.sugars_100g || 0) * 10) / 10,
+                f: Math.round((p.nutriments.fat_100g || 0) * 10) / 10,
+                sf: Math.round((p.nutriments['saturated-fat_100g'] || 0) * 10) / 10,
+                fi: Math.round((p.nutriments.fiber_100g || 0) * 10) / 10,
+                sa: Math.round((p.nutriments.salt_100g || 0) * 100) / 100
+            };
+            
+            // Verify and Lock step
+            const confirmed = confirm(`Found on Open Food Facts:\n\n${newFood.n}\n🔥 ${newFood.k} kcal\nP: ${newFood.p}g | C: ${newFood.c}g | F: ${newFood.f}g\n\nSave this permanently to your local database?`);
+            
+            if (confirmed) {
+                await db.foods.put(newFood);
+                alert("Saved! Scan it again right now—it will load offline instantly.");
+            }
+        } else {
+            alert("Product not found in Open Food Facts database.");
+        }
+    } catch (err) {
+        console.error("Barcode fetch error:", err);
+        alert("Network error fetching barcode. You might be offline.");
+    }
 }

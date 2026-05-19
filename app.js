@@ -99,71 +99,83 @@ function selectFood(id) {
 }
 
 // ==========================================
-// BARCODE SCANNER LOGIC (Optimized + Torch)
+// BARCODE SCANNER LOGIC (Quagga2)
 // ==========================================
-let html5QrcodeScanner;
-let isTorchOn = false;
+let quaggaIsRunning = false;
 
 function startScanner() {
+    if (quaggaIsRunning) return;
+
     document.getElementById('start-scan-btn').style.display = 'none';
-    document.getElementById('torch-btn').style.display = 'block';
 
-    html5QrcodeScanner = new Html5Qrcode("reader");
-    
-    const config = { 
-        fps: 15, // High enough to catch motion, low enough not to crash the browser
-        qrbox: { width: 300, height: 150 }, // Wider box so EAN edges don't get cut off
-        
-        // ONLY look for German/European barcodes
-        formatsToSupport: [
-            Html5QrcodeSupportedFormats.EAN_13,
-            Html5QrcodeSupportedFormats.EAN_8
-        ],
-
-        // ABSOLUTE FASTEST SETTING: 
-        // Bypasses JavaScript math and forces your phone's native OS scanner
-        experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true
-        }
-    };
-
-    html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess)
-        .catch(fatalError => {
-            console.error("Camera failed:", fatalError);
-            alert("Camera error. Please ensure permissions are granted.");
+    Quagga.init({
+        inputStream: {
+            name: "Live",
+            type: "LiveStream",
+            target: document.querySelector('#reader'), 
+            constraints: {
+                facingMode: "environment",
+                width: { ideal: 1920 }, // Ask for HD, fallback safely
+                height: { ideal: 1080 }
+            }
+        },
+        locator: {
+            patchSize: "medium", // 'medium' is usually best for mobile EANs
+            halfSample: true
+        },
+        numOfWorkers: navigator.hardwareConcurrency || 2, // Use multiple CPU cores!
+        decoder: {
+            readers: ["ean_reader", "ean_8_reader"] // Only look for grocery barcodes
+        },
+        locate: true
+    }, function(err) {
+        if (err) {
+            console.error("Quagga initialization failed:", err);
+            alert("Camera error. Please check permissions.");
             resetScannerUI();
-        });
-}
-
-async function toggleFlash() {
-    if (!html5QrcodeScanner) return;
-
-    isTorchOn = !isTorchOn;
-    
-    try {
-        // Apply the torch constraint directly to the active video track
-        await html5QrcodeScanner.applyVideoConstraints({
-            advanced: [{ torch: isTorchOn }]
-        });
-    } catch (error) {
-        console.error("Torch failed to toggle:", error);
-        alert("Flashlight is not supported by your browser/device combination.");
-        isTorchOn = !isTorchOn; // Revert state if it failed
-    }
+            return;
+        }
+        Quagga.start();
+        quaggaIsRunning = true;
+    });
 }
 
 function resetScannerUI() {
     document.getElementById('start-scan-btn').style.display = 'block';
-    document.getElementById('torch-btn').style.display = 'none';
-    isTorchOn = false;
+    quaggaIsRunning = false;
 }
 
-async function onScanSuccess(decodedText, decodedResult) {
-    html5QrcodeScanner.stop().then(() => {
+// Variables for our "Confidence Check"
+let lastScannedCode = "";
+let consecutiveMatches = 0;
+
+Quagga.onDetected((result) => {
+    const code = result.codeResult.code;
+
+    // The Confidence Check: Ensure we read the exact same code 3 times in a row
+    if (code === lastScannedCode) {
+        consecutiveMatches++;
+    } else {
+        lastScannedCode = code;
+        consecutiveMatches = 1;
+    }
+
+    if (consecutiveMatches >= 3) {
+        // We have a solid lock! Stop the scanner immediately.
+        Quagga.stop();
         resetScannerUI();
-    });
-    
-    console.log(`Scanned Barcode: ${decodedText}`);
+        
+        // Reset counters for the next time we open the scanner
+        consecutiveMatches = 0; 
+        lastScannedCode = "";
+
+        // Process the barcode
+        processBarcode(code);
+    }
+});
+
+async function processBarcode(decodedText) {
+    console.log(`Solid Lock on Barcode: ${decodedText}`);
 
     // 1. CHECK LOCAL DATABASE FIRST
     const localHit = await db.foods.get(decodedText);

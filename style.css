@@ -134,3 +134,15 @@ h1 {
     vertical-align: middle;
     margin-left: 6px;
 }
+/* Add these rules for Quagga2 */
+#reader {
+    position: relative;
+}
+#reader video, #reader canvas {
+    width: 100%;
+    border-radius: 12px;
+}
+/* Hide the drawing canvas Quagga overlays by default so it doesn't look messy */
+#reader canvas.drawing, #reader canvas.drawingBuffer {
+    display: none;
+}

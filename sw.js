@@ -6,7 +6,10 @@ const ASSETS_TO_CACHE = [
     './style.css',
     './app.js',
     './manifest.json',
-    'https://unpkg.com/html5-qrcode',
+    './bls-data.json',
+    './light-blue_checkmark.png',
+    // New Quagga2 CDN
+    'https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js',
     'https://unpkg.com/dexie@latest/dist/dexie.js'
 ];
 

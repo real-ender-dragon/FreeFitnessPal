@@ -110,7 +110,6 @@ function startScanner() {
 
     html5QrcodeScanner = new Html5Qrcode("reader");
     
-    // Narrower height forces the library to process a smaller, denser area
     const config = { 
         fps: 30, 
         qrbox: { width: 250, height: 100 }, 
@@ -121,23 +120,27 @@ function startScanner() {
         ]
     };
 
-    // THE FIX: Force 1080p HD resolution and continuous auto-focus for small barcodes
-    const cameraConstraints = {
+    // Removed the aggressive 'min' requirements and 'advanced' focus mode.
+    // 'ideal' tells Safari: "Give me 1080p if you have it, but don't crash if you don't."
+    const hdConstraints = {
         facingMode: "environment",
-        width: { ideal: 1920, min: 1280 },
-        height: { ideal: 1080, min: 720 },
-        advanced: [{ focusMode: "continuous" }]
+        width: { ideal: 1920 },
+        height: { ideal: 1080 }
     };
 
-    html5QrcodeScanner.start(
-        cameraConstraints, 
-        config, 
-        onScanSuccess
-    ).catch(err => {
-        console.error("Camera start failed:", err);
-        alert("Camera permission denied or unsupported.");
-        resetScannerUI();
-    });
+    // 1. Try the HD feed first
+    html5QrcodeScanner.start(hdConstraints, config, onScanSuccess)
+        .catch(hdError => {
+            console.warn("HD camera rejected by iOS. Falling back to basic...", hdError);
+            
+            // 2. If HD fails, fall back to the basic environment camera
+            html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess)
+                .catch(fatalError => {
+                    console.error("Complete camera failure:", fatalError);
+                    alert("Camera blocked. Please go to iPhone Settings > Safari > Camera and set it to 'Allow' or 'Ask'.");
+                    resetScannerUI();
+                });
+        });
 }
 
 async function toggleFlash() {

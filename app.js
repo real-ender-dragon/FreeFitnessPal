@@ -80,7 +80,7 @@ searchInput.addEventListener('input', async (e) => {
             <li onclick="selectFood('${food.i}')">
                 <span class="food-name">
                     ${food.n} 
-                    <img src="./light-blue_checkmark.png" class="verified-icon" alt="Verified">
+                    <img src="./static/light-blue_checkmark.png" class="verified-icon" alt="Verified">
                 </span>
                 <span class="food-macros">
                     ${food.k} kcal | P: ${food.p}g | C: ${food.c}g | F: ${food.f}g

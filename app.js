@@ -111,35 +111,26 @@ function startScanner() {
     html5QrcodeScanner = new Html5Qrcode("reader");
     
     const config = { 
-        fps: 30, 
+        // 15 FPS is the sweet spot. 30 FPS can choke mobile processors, 
+        // causing dropped frames and actually making scanning SLOWER.
+        fps: 15, 
+        
+        // A wide rectangle is perfectly optimized for 1D EAN barcodes
         qrbox: { width: 250, height: 100 }, 
         aspectRatio: 1.0,
+        
+        // HUGE PERFORMANCE BOOST: Only run EAN decoding algorithms
         formatsToSupport: [
             Html5QrcodeSupportedFormats.EAN_13,
             Html5QrcodeSupportedFormats.EAN_8
         ]
     };
 
-    // Removed the aggressive 'min' requirements and 'advanced' focus mode.
-    // 'ideal' tells Safari: "Give me 1080p if you have it, but don't crash if you don't."
-    const hdConstraints = {
-        facingMode: "environment",
-        width: { ideal: 1920 },
-        height: { ideal: 1080 }
-    };
-
-    // 1. Try the HD feed first
-    html5QrcodeScanner.start(hdConstraints, config, onScanSuccess)
-        .catch(hdError => {
-            console.warn("HD camera rejected by iOS. Falling back to basic...", hdError);
-            
-            // 2. If HD fails, fall back to the basic environment camera
-            html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess)
-                .catch(fatalError => {
-                    console.error("Complete camera failure:", fatalError);
-                    alert("Camera blocked. Please go to iPhone Settings > Safari > Camera and set it to 'Allow' or 'Ask'.");
-                    resetScannerUI();
-                });
+    html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess)
+        .catch(fatalError => {
+            console.error("Camera failed to start:", fatalError);
+            alert("Failed to start camera. Please check permissions.");
+            resetScannerUI();
         });
 }
 

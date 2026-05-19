@@ -24,3 +24,53 @@ h1 {
 #ui-container {
     margin-top: 20px;
 }
+/* Add to the bottom of style.css */
+#search-container {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto 20px auto;
+}
+
+#food-search {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 16px; /* 16px prevents iOS Safari from auto-zooming! */
+    border: 1px solid #c7c7cc;
+    border-radius: 10px;
+    box-sizing: border-box;
+    background-color: #fff;
+}
+
+#search-results {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0 0 0;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+#search-results li {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e5e5ea;
+    cursor: pointer;
+}
+
+#search-results li:last-child {
+    border-bottom: none;
+}
+
+#search-results li:active {
+    background-color: #e5e5ea;
+}
+
+.food-name {
+    font-weight: 600;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.food-macros {
+    font-size: 14px;
+    color: #8e8e93; /* iOS secondary text color */
+}

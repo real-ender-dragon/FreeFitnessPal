@@ -55,48 +55,90 @@ initializeApp();
 const searchInput = document.getElementById('food-search');
 const searchResults = document.getElementById('search-results');
 
+let searchTimeout;
+let currentLocalResults = [];
+
 searchInput.addEventListener('input', async (e) => {
     const query = e.target.value.toLowerCase().trim();
     
-    // Don't search if the user only typed one letter
     if (query.length < 2) {
         searchResults.innerHTML = '';
+        clearTimeout(searchTimeout);
         return;
     }
 
     try {
-        // Search the local Dexie database. 
-        // We use .filter() for a wildcard search and .limit(15) so it renders instantly.
-        const results = await db.foods
+        // 1. Instant Offline Search (BLS Data)
+        currentLocalResults = await db.foods
             .filter(food => food.n.toLowerCase().includes(query))
-            .limit(15)
+            .limit(10)
             .toArray();
 
-        renderResults(results);
+        // Render local results instantly while we wait for the internet
+        renderCombinedResults(currentLocalResults, []);
+
+        // 2. Debounced Online Search (Open Food Facts API)
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(async () => {
+            try {
+                const offResults = await fetchOpenFoodFacts(query);
+                // Re-render with both local and online results
+                renderCombinedResults(currentLocalResults, offResults);
+            } catch (err) {
+                console.error("OFF API Error:", err);
+            }
+        }, 600); // Waits 600ms after you stop typing
+
     } catch (error) {
         console.error('Search failed:', error);
     }
 });
 
-function renderResults(results) {
-    if (results.length === 0) {
+// Helper function to fetch from Open Food Facts
+async function fetchOpenFoodFacts(query) {
+    const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=10`);
+    const data = await res.json();
+    
+    // Map the bloated OFF data to our clean Big 7 structure
+    return data.products
+        .filter(p => p.product_name) // Skip items with no name
+        .map(p => ({
+            i: p.code,
+            n: p.product_name,
+            k: Math.round(p.nutriments['energy-kcal_100g'] || 0),
+            p: Math.round((p.nutriments.proteins_100g || 0) * 10) / 10,
+            c: Math.round((p.nutriments.carbohydrates_100g || 0) * 10) / 10,
+            f: Math.round((p.nutriments.fat_100g || 0) * 10) / 10,
+            isOff: true // Custom flag so we know it came from the internet
+        }));
+}
+
+function renderCombinedResults(local, online) {
+    const allResults = [...local, ...online];
+
+    if (allResults.length === 0) {
         searchResults.innerHTML = '<li><span class="food-macros">No foods found.</span></li>';
         return;
     }
 
-    // Map the results into HTML list items
-    searchResults.innerHTML = results.map(food => `
-        <li onclick="selectFood('${food.i}')">
-            <span class="food-name">${food.n}</span>
-            <span class="food-macros">
-                🔥 ${food.k} kcal | P: ${food.p}g | C: ${food.c}g | F: ${food.f}g
-            </span>
-        </li>
-    `).join('');
+    searchResults.innerHTML = allResults.map(food => {
+        // Use the blue checkmark for BLS, and a package icon for Open Food Facts
+        const icon = food.isOff ? '📦' : '<span class="verified-icon">✔️</span>';
+        const sourceText = food.isOff ? 'Open Food Facts' : 'BLS Database (Verified)';
+
+        return `
+            <li onclick="selectFood('${food.i}')">
+                <span class="food-name">${food.n} ${icon}</span>
+                <span class="food-macros">
+                    🔥 ${food.k} kcal | P: ${food.p}g | C: ${food.c}g | F: ${food.f}g
+                </span>
+                <span class="source-label">${sourceText}</span>
+            </li>
+        `;
+    }).join('');
 }
 
-// Placeholder for when you tap a food in the list
-function selectFood(blsCode) {
-    console.log('You selected food ID:', blsCode);
-    alert(`Selected: ${blsCode} - We will build the logging feature next!`);
+function selectFood(id) {
+    console.log('You selected food ID:', id);
+    alert(`Selected ID: ${id}`);
 }

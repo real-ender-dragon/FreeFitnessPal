@@ -1,0 +1,23 @@
+{
+  "name": "FreeFitnessPal",
+  "short_name": "Tracker",
+  "description": "Offline-first barcode macro tracker",
+  "start_url": "/FreeFitnessPal/",
+  "scope": "/FreeFitnessPal/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f2f2f7",
+  "theme_color": "#1c1c1e",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}

@@ -95,36 +95,73 @@ function selectFood(id) {
 }
 
 // ==========================================
-// BARCODE SCANNER LOGIC
+// BARCODE SCANNER LOGIC (Optimized + Torch)
 // ==========================================
 let html5QrcodeScanner;
+let isTorchOn = false;
 
 function startScanner() {
-    // Initialize the scanner
+    // Hide the scan button and show the torch button while scanning
+    document.getElementById('start-scan-btn').style.display = 'none';
+    document.getElementById('torch-btn').style.display = 'block';
+
     html5QrcodeScanner = new Html5Qrcode("reader");
     
+    // MASSIVE PERFORMANCE BOOST: 
+    // 1. Triple the FPS.
+    // 2. Only search for grocery barcodes (EAN 13 and EAN 8).
     const config = { 
-        fps: 10, 
-        qrbox: { width: 250, height: 150 },
-        aspectRatio: 1.0
+        fps: 30, 
+        qrbox: { width: 300, height: 150 }, // Wider box for EAN barcodes
+        aspectRatio: 1.0,
+        formatsToSupport: [
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8
+        ]
     };
 
     html5QrcodeScanner.start(
-        { facingMode: "environment" }, // Forces rear camera
+        { facingMode: "environment" }, 
         config, 
         onScanSuccess
     ).catch(err => {
         console.error("Camera start failed:", err);
         alert("Camera permission denied or unsupported.");
+        resetScannerUI();
     });
 }
 
+async function toggleFlash() {
+    if (!html5QrcodeScanner) return;
+
+    isTorchOn = !isTorchOn;
+    
+    try {
+        // Apply the torch constraint directly to the active video track
+        await html5QrcodeScanner.applyVideoConstraints({
+            advanced: [{ torch: isTorchOn }]
+        });
+    } catch (error) {
+        console.error("Torch failed to toggle:", error);
+        alert("Flashlight is not supported by your browser/device combination.");
+        isTorchOn = !isTorchOn; // Revert state if it failed
+    }
+}
+
+function resetScannerUI() {
+    document.getElementById('start-scan-btn').style.display = 'block';
+    document.getElementById('torch-btn').style.display = 'none';
+    isTorchOn = false;
+}
+
 async function onScanSuccess(decodedText, decodedResult) {
-    // 1. Immediately stop the camera once a barcode is detected
-    html5QrcodeScanner.stop();
+    html5QrcodeScanner.stop().then(() => {
+        resetScannerUI();
+    });
+    
     console.log(`Scanned Barcode: ${decodedText}`);
 
-    // 2. CHECK LOCAL DATABASE FIRST
+    // 1. CHECK LOCAL DATABASE FIRST
     const localHit = await db.foods.get(decodedText);
     
     if (localHit) {
@@ -132,19 +169,17 @@ async function onScanSuccess(decodedText, decodedResult) {
         return; 
     }
 
-    // 3. API FALLBACK (Open Food Facts v2 API)
+    // 2. API FALLBACK (Open Food Facts v2 API)
     console.log("Barcode not found locally. Fetching from Open Food Facts...");
     try {
-        // The v2 endpoint is stable and does not suffer from the 503 CORS text-search issues
         const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${decodedText}`);
         const data = await res.json();
 
         if (data.status === 1) {
             const p = data.product;
             
-            // Map their data directly to our Big 7 schema
             const newFood = {
-                i: decodedText, // The barcode is the primary key
+                i: decodedText, 
                 n: p.product_name || "Unknown Product",
                 k: Math.round(p.nutriments['energy-kcal_100g'] || 0),
                 p: Math.round((p.nutriments.proteins_100g || 0) * 10) / 10,
@@ -156,8 +191,7 @@ async function onScanSuccess(decodedText, decodedResult) {
                 sa: Math.round((p.nutriments.salt_100g || 0) * 100) / 100
             };
             
-            // Verify and Lock step
-            const confirmed = confirm(`Found on Open Food Facts:\n\n${newFood.n}\n🔥 ${newFood.k} kcal\nP: ${newFood.p}g | C: ${newFood.c}g | F: ${newFood.f}g\n\nSave this permanently to your local database?`);
+            const confirmed = confirm(`Found on Open Food Facts:\n\n${newFood.n}\n🔥 ${newFood.k} kcal\nP: ${newFood.p}g | C: ${newFood.c}g | F: ${newFood.f}g\n\nSave this permanently?`);
             
             if (confirmed) {
                 await db.foods.put(newFood);

@@ -49,12 +49,12 @@ async function initializeApp() {
 
 // Fire the bootstrapper when the script loads
 initializeApp();
-
 // ==========================================
 // SEARCH UI LOGIC (Pure Local BLS)
 // ==========================================
-const searchInput = document.getElementById('food-search');
-const searchResults = document.getElementById('search-results');
+// FIXED: Targeting the new IDs from the updated index.html
+const searchInput = document.getElementById('food-search-input'); 
+const searchResults = document.getElementById('search-results-list');
 
 searchInput.addEventListener('input', async (e) => {
     const query = e.target.value.toLowerCase().trim();
@@ -75,7 +75,6 @@ searchInput.addEventListener('input', async (e) => {
             return;
         }
 
-        // Update this block inside your searchInput.addEventListener
         searchResults.innerHTML = results.map(food => `
             <li onclick="selectFood('${food.i}')">
                 <span class="food-name">
@@ -106,45 +105,37 @@ let quaggaIsRunning = false;
 function startScanner() {
     if (quaggaIsRunning) return;
 
-    document.getElementById('start-scan-btn').style.display = 'none';
-
     Quagga.init({
         inputStream: {
             name: "Live",
             type: "LiveStream",
-            target: document.querySelector('#reader'), 
+            // FIXED: Target the new #interactive div instead of #reader
+            target: document.querySelector('#interactive'), 
             constraints: {
                 facingMode: "environment",
-                width: { ideal: 1920 }, // Ask for HD, fallback safely
+                width: { ideal: 1920 },
                 height: { ideal: 1080 }
             }
         },
         locator: {
-            patchSize: "medium", // 'medium' is usually best for mobile EANs
+            patchSize: "medium", 
             halfSample: true
         },
-        numOfWorkers: navigator.hardwareConcurrency || 2, // Use multiple CPU cores!
+        numOfWorkers: navigator.hardwareConcurrency || 2, 
         decoder: {
-            readers: ["ean_reader", "ean_8_reader"] // Only look for grocery barcodes
+            readers: ["ean_reader", "ean_8_reader"] 
         },
         locate: true
     }, function(err) {
         if (err) {
             console.error("Quagga initialization failed:", err);
             alert("Camera error. Please check permissions.");
-            resetScannerUI();
             return;
         }
         Quagga.start();
         quaggaIsRunning = true;
     });
 }
-
-function resetScannerUI() {
-    document.getElementById('start-scan-btn').style.display = 'block';
-    quaggaIsRunning = false;
-}
-
 // Variables for our "Confidence Check"
 let lastScannedCode = "";
 let consecutiveMatches = 0;

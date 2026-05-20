@@ -4,182 +4,59 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
     background-color: #000000; /* Pure black */
     color: #f2f2f7; /* Off-white text */
-    padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom); 
+}
+
+/* ==========================================
+   GLOBAL LAYOUT & MAIN VIEW
+   ========================================== */
+.view-container {
+    background-color: #000000; 
+    color: #FFFFFF;
+    min-height: 100vh;
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.main-header {
+    padding-top: env(safe-area-inset-top);
 }
 
 h1 {
     text-align: center;
     font-weight: 700;
+    margin-top: 20px;
 }
 
-#reader { 
-    width: 100%; 
-    max-width: 500px; 
-    margin: 20px auto; 
+.quick-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+}
+
+.action-btn {
+    width: 100%;
+    padding: 16px;
+    background-color: #1c1c1e; /* iOS Dark Gray */
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
     border-radius: 12px;
-    overflow: hidden;
-    background: #1c1c1e;
-}
-
-#search-container {
-    width: 100%;
-    max-width: 500px;
-    margin: 0 auto 20px auto;
-}
-
-#food-search {
-    width: 100%;
-    padding: 12px 16px;
-    font-size: 16px; 
-    border: 1px solid #3a3a3c;
-    border-radius: 10px;
-    box-sizing: border-box;
-    background-color: #1c1c1e;
-    color: #ffffff;
-    color-scheme: dark; /* Tells iOS to use a white cursor and dark clear button */
-}
-
-#food-search::placeholder {
-    color: #8e8e93;
-}
-
-#search-results {
-    list-style: none;
-    padding: 0;
-    margin: 10px 0 0 0;
-    background: #1c1c1e;
-    border-radius: 10px;
-    overflow: hidden;
-}
-
-#search-results li {
-    padding: 12px 16px;
-    border-bottom: 1px solid #3a3a3c;
     cursor: pointer;
 }
 
-#search-results li:last-child {
-    border-bottom: none;
-}
-
-#search-results li:active {
+.action-btn:active {
     background-color: #2c2c2e;
 }
 
-.food-name {
-    font-weight: 600;
-    margin-bottom: 4px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.verified-icon {
-    color: #0a84ff; /* iOS System Blue */
-    font-size: 14px;
-}
-
-.food-macros {
-    font-size: 14px;
-    color: #8e8e93; 
-    display: block;
-}
-
-.source-label {
-    font-size: 11px;
-    opacity: 0.6;
-    margin-top: 2px;
-    display: block;
-}
-
-#start-scan-btn {
-    display: block;
-    width: 100%;
-    max-width: 500px;
-    margin: 0 auto 20px auto;
-    padding: 14px;
-    background-color: #0a84ff; /* iOS Blue */
-    color: white;
-    font-size: 16px;
-    font-weight: 600;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-}
-#start-scan-btn:active {
-    background-color: #0070d6;
-}
-#torch-btn {
-    display: block;
-    width: 100%;
-    max-width: 500px;
-    margin: 0 auto 20px auto;
-    padding: 14px;
-    background-color: #30d158; /* iOS Green */
-    color: white;
-    font-size: 16px;
-    font-weight: 600;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-}
-#torch-btn:active {
-    background-color: #24a143;
-}
-
-.verified-icon {
-    width: 16px;
-    height: 16px;
-    object-fit: contain; /* Ensures the image doesn't stretch */
-    vertical-align: middle;
-    margin-left: 6px;
-}
-/* Add these rules for Quagga2 */
-#reader {
-    position: relative;
-}
-#reader video, #reader canvas {
-    width: 100%;
-    border-radius: 12px;
-}
-/* Hide the drawing canvas Quagga overlays by default so it doesn't look messy */
-#reader canvas.drawing, #reader canvas.drawingBuffer {
-    display: none;
-}
-
-/* Ensure the camera fills the entire screen */
-#interactive.viewport {
-    position: relative;
-    width: 100vw;
-    height: 100vh;
-    overflow: hidden;
-    background-color: #000; /* OLED Black */
-}
-
-#interactive.viewport video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover; /* This prevents stretching and fills the screen */
-}
-
-/* Hide the unnecessary scanner square and laser lines */
-#interactive.viewport canvas.drawing,
-#interactive.viewport canvas.drawingBuffer {
-    display: none !important; 
-}
-
-/* Deep OLED Black Background */
-.view-container {
-    background-color: #000000; 
-    color: #FFFFFF;
-    min-height: 100vh;
-}
-
+/* ==========================================
+   SEARCH VIEW (Lifesum Style)
+   ========================================== */
 .search-header {
     display: flex;
     align-items: center;
     padding: 16px;
-    padding-top: 60px; /* Safe area padding for iOS notch/island */
+    padding-top: max(60px, env(safe-area-inset-top)); /* Handle notch */
     background-color: #000000;
 }
 
@@ -197,7 +74,7 @@ h1 {
     flex-grow: 1;
     display: flex;
     align-items: center;
-    background-color: #1C1C1E; /* Standard iOS Dark Mode Gray */
+    background-color: #1C1C1E;
     border-radius: 12px;
     padding: 10px 14px;
     margin-left: 12px;
@@ -214,10 +91,10 @@ h1 {
 }
 
 .search-input-wrapper input::placeholder {
-    color: #8E8E93; /* Soft gray placeholder text */
+    color: #8E8E93;
 }
 
-/* Clean list style for results */
+/* Search Results Styling */
 #search-results-list {
     list-style: none;
     padding: 0 16px;
@@ -227,5 +104,75 @@ h1 {
 #search-results-list li {
     padding: 16px 0;
     border-bottom: 1px solid #2C2C2E;
+    cursor: pointer;
+}
+
+#search-results-list li:active {
+    opacity: 0.7;
+}
+
+.food-name {
+    font-weight: 600;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
     font-size: 16px;
+}
+
+.food-macros {
+    font-size: 14px;
+    color: #8e8e93; 
+    display: block;
+    margin-top: 4px;
+}
+
+.source-label {
+    font-size: 11px;
+    opacity: 0.6;
+    margin-top: 4px;
+    display: block;
+}
+
+.verified-icon {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    margin-left: 6px;
+}
+
+/* ==========================================
+   SCANNER VIEW (Edge-to-Edge)
+   ========================================== */
+.scanner-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    padding: 16px;
+    padding-top: max(60px, env(safe-area-inset-top));
+    box-sizing: border-box;
+}
+
+#interactive.viewport {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background-color: #000;
+}
+
+#interactive.viewport video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+#interactive.viewport canvas.drawing,
+#interactive.viewport canvas.drawingBuffer {
+    display: none !important; 
 }

@@ -3,7 +3,6 @@
 // ==========================================
 let currentActiveFood = null;
 
-// Unique variable names to prevent global clashes
 const fdDetailView = document.getElementById('food-detail-view');
 const fdSearchView = document.getElementById('search-view'); 
 
@@ -14,6 +13,17 @@ const detailProtein = document.getElementById('detail-protein');
 const detailFat = document.getElementById('detail-fat');
 const amountInput = document.getElementById('detail-amount');
 
+// New Table Elements
+const tableHeaderAmount = document.getElementById('table-header-amount');
+const tableKcal = document.getElementById('table-kcal');
+const tableFat = document.getElementById('table-fat');
+const tableSatFat = document.getElementById('table-satfat');
+const tableCarbs = document.getElementById('table-carbs');
+const tableSugars = document.getElementById('table-sugars');
+const tableFiber = document.getElementById('table-fiber');
+const tableProtein = document.getElementById('table-protein');
+const tableSalt = document.getElementById('table-salt');
+
 async function openFoodDetail(foodId) {
     try {
         currentActiveFood = await db.foods.get(foodId);
@@ -23,7 +33,6 @@ async function openFoodDetail(foodId) {
         detailName.innerText = currentActiveFood.n;
         updateMacroDisplay(100);
 
-        // Hide all views and show detail view
         document.querySelectorAll('.view-container').forEach(v => v.style.display = 'none');
         fdDetailView.style.display = 'block';
 
@@ -35,22 +44,28 @@ async function openFoodDetail(foodId) {
 function updateMacroDisplay(amountGrams) {
     if (!currentActiveFood) return;
     const multiplier = amountGrams / 100;
+    
+    // 1. Update the Big UI blocks
     detailCalories.innerText = Math.round(currentActiveFood.k * multiplier);
     detailCarbs.innerText = (currentActiveFood.c * multiplier).toFixed(1) + "g";
     detailProtein.innerText = (currentActiveFood.p * multiplier).toFixed(1) + "g";
     detailFat.innerText = (currentActiveFood.f * multiplier).toFixed(1) + "g";
+
+    // 2. Update the German Standard Table
+    tableHeaderAmount.innerText = `per ${amountGrams}g`;
+    tableKcal.innerText = Math.round(currentActiveFood.k * multiplier) + " kcal";
+    tableFat.innerText = (currentActiveFood.f * multiplier).toFixed(1) + "g";
+    // Fallback to 0 if sub-macros don't exist in the item
+    tableSatFat.innerText = ((currentActiveFood.sf || 0) * multiplier).toFixed(1) + "g";
+    tableCarbs.innerText = (currentActiveFood.c * multiplier).toFixed(1) + "g";
+    tableSugars.innerText = ((currentActiveFood.su || 0) * multiplier).toFixed(1) + "g";
+    tableFiber.innerText = ((currentActiveFood.fi || 0) * multiplier).toFixed(1) + "g";
+    tableProtein.innerText = (currentActiveFood.p * multiplier).toFixed(1) + "g";
+    // Salt is usually rounded to 2 decimal places
+    tableSalt.innerText = ((currentActiveFood.sa || 0) * multiplier).toFixed(2) + "g"; 
 }
 
-amountInput.addEventListener('input', (e) => {
-    const amount = parseFloat(e.target.value) || 0;
-    updateMacroDisplay(amount);
-});
-
-document.getElementById('close-detail-btn').addEventListener('click', () => {
-    fdDetailView.style.display = 'none';
-    fdSearchView.style.display = 'block';
-    currentActiveFood = null;
-});
+// ... Keep the rest of your event listeners below this (amountInput, close button, save button)
 
 document.getElementById('save-to-diary-btn').addEventListener('click', async () => {
     if (!currentActiveFood) return;

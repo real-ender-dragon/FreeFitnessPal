@@ -113,7 +113,59 @@
             </div>
 
             <button id="save-to-diary-btn" class="save-btn">Add to Diary</button>
+
+            <div class="portion-input-container">
+                <input type="number" id="detail-amount" inputmode="decimal" value="100">
+                <span class="unit-label">grams</span>
+            </div>
+
+            <div class="nutrition-table-container">
+                <table class="nutrition-table">
+                    <thead>
+                        <tr>
+                            <th>Nutrition Facts</th>
+                            <th id="table-header-amount">per 100g</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Energy</td>
+                            <td id="table-kcal">0 kcal</td>
+                        </tr>
+                        <tr>
+                            <td>Fat</td>
+                            <td id="table-fat">0g</td>
+                        </tr>
+                        <tr class="sub-row">
+                            <td>of which saturates</td>
+                            <td id="table-satfat">0g</td>
+                        </tr>
+                        <tr>
+                            <td>Carbohydrates</td>
+                            <td id="table-carbs">0g</td>
+                        </tr>
+                        <tr class="sub-row">
+                            <td>of which sugars</td>
+                            <td id="table-sugars">0g</td>
+                        </tr>
+                        <tr>
+                            <td>Fiber</td>
+                            <td id="table-fiber">0g</td>
+                        </tr>
+                        <tr>
+                            <td>Protein</td>
+                            <td id="table-protein">0g</td>
+                        </tr>
+                        <tr>
+                            <td>Salt</td>
+                            <td id="table-salt">0g</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
         </div>
+
     </div>
 
     <script src="./food-detail.js"></script>

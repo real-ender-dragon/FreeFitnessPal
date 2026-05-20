@@ -117,14 +117,9 @@ function startScanner() {
                 height: { ideal: 1080 }
             }
         },
-        locator: {
-            patchSize: "medium", 
-            halfSample: true
-        },
+        locator: { patchSize: "medium", halfSample: true },
         numOfWorkers: navigator.hardwareConcurrency || 2, 
-        decoder: {
-            readers: ["ean_reader", "ean_8_reader"] 
-        },
+        decoder: { readers: ["ean_reader", "ean_8_reader"] },
         locate: true
     }, function(err) {
         if (err) {
@@ -135,20 +130,33 @@ function startScanner() {
         Quagga.start();
         quaggaIsRunning = true;
 
-        // Check if the device has a flashlight. If yes, show the torch button.
         setTimeout(() => {
             const track = Quagga.CameraAccess.getActiveTrack();
             if (track && typeof track.getCapabilities === 'function') {
-                const capabilities = track.getCapabilities();
-                if (capabilities.torch) {
+                if (track.getCapabilities().torch) {
                     document.getElementById('torch-btn').style.display = 'flex';
                 }
             }
-        }, 500); // 500ms delay to ensure the camera track is fully loaded
+        }, 500);
     });
 }
 
-// Flashlight Toggle Logic
+// NEW: A reliable function to completely shut down the scanner and reset states
+function stopScanner() {
+    if (quaggaIsRunning) {
+        Quagga.stop();
+        quaggaIsRunning = false;
+    }
+    
+    // Reset flash state
+    document.getElementById('torch-btn').style.display = 'none';
+    torchOn = false;
+
+    // Reset confidence counters
+    consecutiveMatches = 0; 
+    lastScannedCode = "";
+}
+
 function toggleFlash() {
     const track = Quagga.CameraAccess.getActiveTrack();
     if (track && typeof track.getCapabilities === 'function') {
@@ -158,14 +166,12 @@ function toggleFlash() {
     }
 }
 
-// Variables for our "Confidence Check"
 let lastScannedCode = "";
 let consecutiveMatches = 0;
 
 Quagga.onDetected((result) => {
     const code = result.codeResult.code;
 
-    // The Confidence Check: Ensure we read the exact same code 3 times in a row
     if (code === lastScannedCode) {
         consecutiveMatches++;
     } else {
@@ -174,27 +180,17 @@ Quagga.onDetected((result) => {
     }
 
     if (consecutiveMatches >= 3) {
-        // We have a solid lock! Stop the scanner immediately.
-        Quagga.stop();
-        quaggaIsRunning = false;
-        
-        // Hide the flash button and turn it off
-        document.getElementById('torch-btn').style.display = 'none';
-        torchOn = false;
+        // FIXED: Use our new stop function
+        stopScanner();
 
-        // NEW: Close the scanner view and go back to search view
         document.getElementById('scanner-view').style.display = 'none';
         document.getElementById('search-view').style.display = 'block';
         
-        // Reset counters for the next time we open the scanner
-        consecutiveMatches = 0; 
-        lastScannedCode = "";
-
-        // Process the barcode
         processBarcode(code);
     }
 });
 
+// ... (keep your existing processBarcode function below)
 async function processBarcode(decodedText) {
     console.log(`Solid Lock on Barcode: ${decodedText}`);
 

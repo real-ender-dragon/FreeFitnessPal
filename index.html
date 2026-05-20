@@ -108,28 +108,33 @@
 
         // Close Scanner and return to Search Bar
         document.getElementById('close-scanner-btn').addEventListener('click', () => {
+            // FIXED: Use the new global stopScanner function
+            stopScanner(); 
+            
             scannerView.style.display = 'none';
             searchView.style.display = 'block';
-            Quagga.stop(); 
         });
 
         // Manual Barcode Entry Logic
         document.getElementById('manual-barcode-btn').addEventListener('click', () => {
-            // Trigger native iOS/Android prompt for keyboard input
-            const manualCode = prompt("Enter barcode number:");
+            // 1. First, cleanly shut down the camera to PREVENT the iOS Safari crash
+            stopScanner();
             
-            // If they typed something and didn't hit cancel
-            if (manualCode && manualCode.trim() !== "") {
-                // Stop the camera to save battery
-                Quagga.stop();
+            // 2. Switch UI immediately back to the search page
+            scannerView.style.display = 'none';
+            searchView.style.display = 'block';
+            
+            // 3. Use a tiny delay to allow the camera hardware to turn off 
+            // before the prompt() blocks the browser thread
+            setTimeout(() => {
+                const manualCode = prompt("Enter barcode number:");
                 
-                // Return to the search view
-                scannerView.style.display = 'none';
-                searchView.style.display = 'block';
-                
-                // Fire off your existing process function from app.js
-                processBarcode(manualCode.trim());
-            }
+                // If they typed something and didn't hit cancel
+                if (manualCode && manualCode.trim() !== "") {
+                    // Fire off your existing process function from app.js
+                    processBarcode(manualCode.trim());
+                }
+            }, 100);
         });
     </script>
 </body>

@@ -176,3 +176,15 @@ h1 {
 #interactive.viewport canvas.drawingBuffer {
     display: none !important; 
 }
+
+/* Lock the scanner view to prevent vertical scrolling and pull-to-refresh */
+#scanner-view {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    touch-action: none; /* This kills native swipe-to-scroll and pull-to-refresh */
+    z-index: 999;
+}

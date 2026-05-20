@@ -52,7 +52,7 @@ function updateMacroDisplay(amountGrams) {
     detailFat.innerText = (currentActiveFood.f * multiplier).toFixed(1) + "g";
 
     // 2. Update the German Standard Table
-    tableHeaderAmount.innerText = `per ${amountGrams}g`;
+    tableHeaderAmount.innerText = `pro ${amountGrams}g / ml`;
     tableKcal.innerText = Math.round(currentActiveFood.k * multiplier) + " kcal";
     tableFat.innerText = (currentActiveFood.f * multiplier).toFixed(1) + "g";
     // Fallback to 0 if sub-macros don't exist in the item
@@ -66,6 +66,16 @@ function updateMacroDisplay(amountGrams) {
 }
 
 // ... Keep the rest of your event listeners below this (amountInput, close button, save button)
+
+amountInput.addEventListener('input', (e) => {
+    const amount = parseFloat(e.target.value) || 0;
+    updateMacroDisplay(amount);
+});
+
+document.getElementById('close-detail-btn').addEventListener('click', () => {
+    fdDetailView.style.display = 'none';
+    fdSearchView.style.display = 'block';
+});
 
 document.getElementById('save-to-diary-btn').addEventListener('click', async () => {
     if (!currentActiveFood) return;

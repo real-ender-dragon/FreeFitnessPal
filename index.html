@@ -77,7 +77,47 @@
 
         <div id="interactive" class="viewport"></div>
     </div>
+    <div id="food-detail-view" class="view-container" style="display: none;">
+        <div class="search-header">
+            <button id="close-detail-btn" class="icon-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            </button>
+        </div>
 
+        <div class="detail-content">
+            <h2 id="detail-name" class="detail-title">Food Name</h2>
+            
+            <div class="calories-showcase">
+                <span id="detail-calories" class="huge-calories">0</span>
+                <span class="kcal-label">kcal</span>
+            </div>
+
+            <div class="macros-grid">
+                <div class="macro-box">
+                    <span class="macro-label">Carbs</span>
+                    <span id="detail-carbs" class="macro-value carbs-color">0g</span>
+                </div>
+                <div class="macro-box">
+                    <span class="macro-label">Protein</span>
+                    <span id="detail-protein" class="macro-value protein-color">0g</span>
+                </div>
+                <div class="macro-box">
+                    <span class="macro-label">Fat</span>
+                    <span id="detail-fat" class="macro-value fat-color">0g</span>
+                </div>
+            </div>
+
+            <div class="portion-input-container">
+                <input type="number" id="detail-amount" inputmode="decimal" value="100">
+                <span class="unit-label">grams</span>
+            </div>
+
+            <button id="save-to-diary-btn" class="save-btn">Add to Diary</button>
+        </div>
+    </div>
+
+    <script src="./food-detail.js"></script>
+    <script src="./app.js"></script>
 
     <script src="./app.js"></script>
     

@@ -101,6 +101,7 @@ function selectFood(id) {
 // BARCODE SCANNER LOGIC (Quagga2)
 // ==========================================
 let quaggaIsRunning = false;
+let torchOn = false;
 
 function startScanner() {
     if (quaggaIsRunning) return;
@@ -109,7 +110,6 @@ function startScanner() {
         inputStream: {
             name: "Live",
             type: "LiveStream",
-            // FIXED: Target the new #interactive div instead of #reader
             target: document.querySelector('#interactive'), 
             constraints: {
                 facingMode: "environment",
@@ -134,8 +134,30 @@ function startScanner() {
         }
         Quagga.start();
         quaggaIsRunning = true;
+
+        // Check if the device has a flashlight. If yes, show the torch button.
+        setTimeout(() => {
+            const track = Quagga.CameraAccess.getActiveTrack();
+            if (track && typeof track.getCapabilities === 'function') {
+                const capabilities = track.getCapabilities();
+                if (capabilities.torch) {
+                    document.getElementById('torch-btn').style.display = 'flex';
+                }
+            }
+        }, 500); // 500ms delay to ensure the camera track is fully loaded
     });
 }
+
+// Flashlight Toggle Logic
+function toggleFlash() {
+    const track = Quagga.CameraAccess.getActiveTrack();
+    if (track && typeof track.getCapabilities === 'function') {
+        torchOn = !torchOn;
+        track.applyConstraints({ advanced: [{ torch: torchOn }] })
+            .catch(e => console.log("Torch error:", e));
+    }
+}
+
 // Variables for our "Confidence Check"
 let lastScannedCode = "";
 let consecutiveMatches = 0;
@@ -154,7 +176,15 @@ Quagga.onDetected((result) => {
     if (consecutiveMatches >= 3) {
         // We have a solid lock! Stop the scanner immediately.
         Quagga.stop();
-        resetScannerUI();
+        quaggaIsRunning = false;
+        
+        // Hide the flash button and turn it off
+        document.getElementById('torch-btn').style.display = 'none';
+        torchOn = false;
+
+        // NEW: Close the scanner view and go back to search view
+        document.getElementById('scanner-view').style.display = 'none';
+        document.getElementById('search-view').style.display = 'block';
         
         // Reset counters for the next time we open the scanner
         consecutiveMatches = 0; 

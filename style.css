@@ -400,3 +400,98 @@ h1 {
 
 .meal-option:last-child { border-bottom: none; }
 .meal-option:active { background-color: #3A3A3C; }
+
+
+/* ==========================================
+   EINGABEFELD (Gramm)
+   ========================================== */
+.portion-input-container {
+    display: flex;
+    align-items: center;
+    background-color: #1C1C1E;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px; /* Sauberer Abstand zum Dropdown */
+    width: 100%; /* Volle Breite statt 200px! */
+    box-sizing: border-box; /* Verhindert das Ausbrechen aus dem Bildschirm */
+}
+
+.portion-input-container input {
+    background: transparent;
+    border: none;
+    color: #FFFFFF;
+    font-size: 20px;
+    font-weight: 600;
+    flex-grow: 1; /* Das Input-Feld nimmt sich den gesamten linken Platz */
+    text-align: left; /* Links ausgerichtet, passend zum Dropdown-Text */
+    outline: none;
+    padding: 0;
+}
+
+.unit-label {
+    font-size: 16px;
+    color: #8E8E93;
+    font-weight: 600;
+}
+
+/* ==========================================
+   DROPDOWN MENÜ
+   ========================================== */
+.custom-dropdown-container {
+    position: relative;
+    width: 100%;
+    margin-bottom: 24px; /* Abstand zum Tracken-Button */
+    box-sizing: border-box;
+}
+
+.meal-select-trigger {
+    width: 100%;
+    padding: 16px;
+    background-color: #1C1C1E;
+    color: #FFFFFF;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    box-sizing: border-box; /* LÖST DAS PADDING PROBLEM AUF DER LINKEN SEITE! */
+}
+
+.meal-options-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background-color: #2C2C2E;
+    border-radius: 12px;
+    margin-top: 8px;
+    z-index: 100;
+    overflow: hidden;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+    box-sizing: border-box;
+}
+
+/* ==========================================
+   TRACKEN BUTTON
+   ========================================== */
+.save-btn {
+    width: 100%;
+    padding: 18px;
+    background-color: #32D74B; 
+    color: #000000;
+    font-size: 18px;
+    font-weight: 700;
+    border: none;
+    border-radius: 16px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(50, 215, 75, 0.3);
+    box-sizing: border-box; /* Verhindert das Ausbrechen */
+    margin-bottom: 40px; /* LÖST DAS PROBLEM: Perfekter Abstand unter dem Button! */
+}
+
+.save-btn:active {
+    opacity: 0.8;
+    transform: scale(0.98);
+}

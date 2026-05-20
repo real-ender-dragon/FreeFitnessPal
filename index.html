@@ -94,15 +94,15 @@
 
             <div class="macros-grid">
                 <div class="macro-box">
-                    <span class="macro-label">Carbs</span>
+                    <span class="macro-label">Kohlenhydrate</span>
                     <span id="detail-carbs" class="macro-value carbs-color">0g</span>
                 </div>
                 <div class="macro-box">
-                    <span class="macro-label">Protein</span>
+                    <span class="macro-label">Eiweiß</span>
                     <span id="detail-protein" class="macro-value protein-color">0g</span>
                 </div>
                 <div class="macro-box">
-                    <span class="macro-label">Fat</span>
+                    <span class="macro-label">Fett</span>
                     <span id="detail-fat" class="macro-value fat-color">0g</span>
                 </div>
             </div>
@@ -112,52 +112,56 @@
                 <span class="unit-label">grams</span>
             </div>
 
-            <button id="save-to-diary-btn" class="save-btn">Add to Diary</button>
-
-            <div class="portion-input-container">
-                <input type="number" id="detail-amount" inputmode="decimal" value="100">
-                <span class="unit-label">grams</span>
+            <div class="meal-selection-container">
+                <select id="detail-meal-type" class="meal-select">
+                    <option value="Frühstück">Frühstück</option>
+                    <option value="Mittagessen">Mittagessen</option>
+                    <option value="Abendessen">Abendessen</option>
+                    <option value="Snack">Snack</option>
+                </select>
             </div>
+
+            <button id="save-to-diary-btn" class="save-btn">Tracken</button>
 
             <div class="nutrition-table-container">
                 <table class="nutrition-table">
                     <thead>
                         <tr>
-                            <th>Nutrition Facts</th>
-                            <th id="table-header-amount">per 100g</th>
+                            <th>Nährwerte</th>
+                            <th id="table-header-amount">pro 100 g / 100 ml</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td>Energy</td>
+                            <td>Brennwert</td>
                             <td id="table-kcal">0 kcal</td>
                         </tr>
                         <tr>
-                            <td>Fat</td>
+                            <td>Fett</td>
                             <td id="table-fat">0g</td>
                         </tr>
                         <tr class="sub-row">
-                            <td>of which saturates</td>
+                            <td>davon gesättigte Fettsäuren</td>
                             <td id="table-satfat">0g</td>
                         </tr>
                         <tr>
-                            <td>Carbohydrates</td>
+                            <td>Kohlenhydrate</td>
                             <td id="table-carbs">0g</td>
                         </tr>
                         <tr class="sub-row">
-                            <td>of which sugars</td>
+                            <td>davon Zucker</td>
                             <td id="table-sugars">0g</td>
                         </tr>
                         <tr>
-                            <td>Fiber</td>
+                            <td>Ballaststoffe</td>
                             <td id="table-fiber">0g</td>
                         </tr>
                         <tr>
-                            <td>Protein</td>
+                            <td>Eiweiß</td>
                             <td id="table-protein">0g</td>
                         </tr>
                         <tr>
-                            <td>Salt</td>
+                            <td>Salz</td>
                             <td id="table-salt">0g</td>
                         </tr>
                     </tbody>

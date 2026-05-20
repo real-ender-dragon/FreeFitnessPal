@@ -356,3 +356,37 @@ h1 {
     color: #8E8E93;
     font-size: 14px;
 }
+/* ==========================================
+   MAHLZEITEN-DROPDOWN
+   ========================================== */
+.meal-selection-container {
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+.meal-select {
+    width: 100%;
+    padding: 16px;
+    background-color: #1C1C1E;
+    color: #FFFFFF;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    border-radius: 12px;
+    outline: none;
+    cursor: pointer;
+    
+    /* Entfernt den Standard-Pfeil des Browsers */
+    appearance: none; 
+    -webkit-appearance: none;
+    
+    /* Fügt einen sauberen SVG-Pfeil im iOS-Stil hinzu */
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2224%22%20height%3D%2224%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20stroke%3D%22%238E8E93%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%209l6%206%206-6%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-size: 16px;
+}
+
+.meal-select:focus {
+    border: 1px solid #32D74B; /* Grüner Rand beim Antippen */
+}

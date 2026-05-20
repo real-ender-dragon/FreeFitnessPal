@@ -130,51 +130,41 @@
             });
         }
 
-        // View Management
-        const searchView = document.getElementById('search-view');
-        const scannerView = document.getElementById('scanner-view');
+        // Isolate variables so they don't clash with your other JS files
+        document.addEventListener('DOMContentLoaded', () => {
+            const indexSearchView = document.getElementById('search-view');
+            const indexScannerView = document.getElementById('scanner-view');
 
-        // Focus search bar on load
-        window.onload = () => {
+            // Focus search bar on load
             document.getElementById('food-search-input').focus();
-        };
 
-        // Open Scanner from Search Bar
-        document.getElementById('nav-scan-btn').addEventListener('click', () => {
-            searchView.style.display = 'none';
-            scannerView.style.display = 'block';
-            startScanner(); 
-        });
+            // Open Scanner
+            document.getElementById('nav-scan-btn').addEventListener('click', () => {
+                indexSearchView.style.display = 'none';
+                indexScannerView.style.display = 'block';
+                startScanner(); 
+            });
 
-        // Close Scanner and return to Search Bar
-        document.getElementById('close-scanner-btn').addEventListener('click', () => {
-            // FIXED: Use the new global stopScanner function
-            stopScanner(); 
-            
-            scannerView.style.display = 'none';
-            searchView.style.display = 'block';
-        });
+            // Close Scanner
+            document.getElementById('close-scanner-btn').addEventListener('click', () => {
+                stopScanner(); 
+                indexScannerView.style.display = 'none';
+                indexSearchView.style.display = 'block';
+            });
 
-        // Manual Barcode Entry Logic
-        document.getElementById('manual-barcode-btn').addEventListener('click', () => {
-            // 1. First, cleanly shut down the camera to PREVENT the iOS Safari crash
-            stopScanner();
-            
-            // 2. Switch UI immediately back to the search page
-            scannerView.style.display = 'none';
-            searchView.style.display = 'block';
-            
-            // 3. Use a tiny delay to allow the camera hardware to turn off 
-            // before the prompt() blocks the browser thread
-            setTimeout(() => {
-                const manualCode = prompt("Enter barcode number:");
+            // Manual Barcode Entry
+            document.getElementById('manual-barcode-btn').addEventListener('click', () => {
+                stopScanner();
+                indexScannerView.style.display = 'none';
+                indexSearchView.style.display = 'block';
                 
-                // If they typed something and didn't hit cancel
-                if (manualCode && manualCode.trim() !== "") {
-                    // Fire off your existing process function from app.js
-                    processBarcode(manualCode.trim());
-                }
-            }, 100);
+                setTimeout(() => {
+                    const manualCode = prompt("Enter barcode number:");
+                    if (manualCode && manualCode.trim() !== "") {
+                        processBarcode(manualCode.trim());
+                    }
+                }, 100);
+            });
         });
     </script>
 </body>

@@ -28,48 +28,105 @@ async function initializeApp() {
 initializeApp();
 
 // ==========================================
-// 2. SEARCH UI LOGIC
+// 2. SEARCH UI LOGIC (Mit OpenFoodFacts & Debouncing)
 // ==========================================
 const searchInput = document.getElementById('food-search-input'); 
 const searchResults = document.getElementById('search-results-list');
+let searchTimeout = null; // Timer-Variable für das Debouncing
 
-searchInput.addEventListener('input', async (e) => {
+searchInput.addEventListener('input', (e) => {
     const query = e.target.value.toLowerCase().trim();
     
-    if (query.length < 2) {
+    // 1. Suche erst ab 3 Buchstaben starten (schont die API zusätzlich)
+    if (query.length < 3) {
         searchResults.innerHTML = '';
+        clearTimeout(searchTimeout);
         return;
     }
 
-    try {
-        const results = await db.foods
-            .filter(food => food.n.toLowerCase().includes(query))
-            .limit(15)
-            .toArray();
+    // 2. DEBOUNCING: Alten Timer abbrechen, wenn der Nutzer weiter tippt
+    clearTimeout(searchTimeout);
 
-        if (results.length === 0) {
-            searchResults.innerHTML = '<li><span class="food-macros">No foods found locally.</span></li>';
-            return;
+    // Lade-Indikator anzeigen
+    searchResults.innerHTML = '<li><span class="food-macros">Suche läuft...</span></li>';
+
+    // 3. Neuen Timer starten (Wartet 600ms nach dem letzten Tastendruck)
+    searchTimeout = setTimeout(async () => {
+        try {
+            let htmlContent = '';
+
+            // --- A) LOKALE SUCHE (Blitzschnell) ---
+            const localResults = await db.foods
+                .filter(food => food.n.toLowerCase().includes(query))
+                .limit(10)
+                .toArray();
+
+            if (localResults.length > 0) {
+                htmlContent += localResults.map(food => `
+                    <li onclick="selectFood('${food.i}')">
+                        <span class="food-name">
+                            ${food.n} 
+                            <img src="./static/light-blue_checkmark.png" class="verified-icon" alt="Verified">
+                        </span>
+                        <span class="food-macros">
+                            ${food.k} kcal | P: ${food.p}g | C: ${food.c}g | F: ${food.f}g
+                        </span>
+                        <span class="source-label">Lokale Datenbank</span>
+                    </li>
+                `).join('');
+            }
+
+            // --- B) OPEN FOOD FACTS SUCHE (Online Fallback) ---
+            // Wir suchen online und begrenzen auf 5 Ergebnisse (page_size=5)
+            const offUrl = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=5`;
+            const offResponse = await fetch(offUrl);
+            const offData = await offResponse.json();
+
+            if (offData && offData.products && offData.products.length > 0) {
+                // Filtern: Wir wollen nur Produkte, die auch Nährwerte eingetragen haben
+                const validOffProducts = offData.products.filter(p => p.product_name && p.nutriments);
+
+                if (validOffProducts.length > 0) {
+                    // Trennlinie / Hinweis für den Nutzer
+                    htmlContent += `<li style="background: #1C1C1E; text-align: center; font-size: 12px; color: #8E8E93; padding: 8px; border-radius: 8px; margin: 8px 0;">Ergebnisse aus dem Internet (Open Food Facts)</li>`;
+
+                    htmlContent += validOffProducts.map(p => {
+                        const id = p.id || p.code;
+                        const name = p.product_name;
+                        const kcal = Math.round(p.nutriments['energy-kcal_100g'] || 0);
+                        const prot = Math.round((p.nutriments.proteins_100g || 0) * 10) / 10;
+                        const carb = Math.round((p.nutriments.carbohydrates_100g || 0) * 10) / 10;
+                        const fat = Math.round((p.nutriments.fat_100g || 0) * 10) / 10;
+
+                        // Klick triggert processBarcode! Das simuliert einen Barcode-Scan.
+                        return `
+                            <li onclick="processBarcode('${id}')">
+                                <span class="food-name">${name}</span>
+                                <span class="food-macros">${kcal} kcal | P: ${prot}g | C: ${carb}g | F: ${fat}g</span>
+                                <span class="source-label" style="color: #FF9F0A;">🌐 Tippen, um dauerhaft herunterzuladen</span>
+                            </li>
+                        `;
+                    }).join('');
+                }
+            }
+
+            // --- C) KEINE ERGEBNISSE ---
+            if (htmlContent === '') {
+                searchResults.innerHTML = '<li><span class="food-macros">Keine Lebensmittel gefunden.</span></li>';
+            } else {
+                searchResults.innerHTML = htmlContent;
+            }
+
+        } catch (error) {
+            console.error('Search failed:', error);
+            // Falls der Nutzer offline ist, zeigen wir nur die lokalen Ergebnisse (falls vorhanden)
+            if (searchResults.innerHTML === '<li><span class="food-macros">Suche läuft...</span></li>') {
+                searchResults.innerHTML = '<li><span class="food-macros">Netzwerkfehler. Bist du offline?</span></li>';
+            }
         }
-
-        searchResults.innerHTML = results.map(food => `
-            <li onclick="selectFood('${food.i}')">
-                <span class="food-name">
-                    ${food.n} 
-                    <img src="./static/light-blue_checkmark.png" class="verified-icon" alt="Verified">
-                </span>
-                <span class="food-macros">
-                    ${food.k} kcal | P: ${food.p}g | C: ${food.c}g | F: ${food.f}g
-                </span>
-                <span class="source-label">BLS Database (Verified)</span>
-            </li>
-        `).join('');
-    } catch (error) {
-        console.error('Search failed:', error);
-    }
+    }, 600); // 600ms Warten = Absoluter Schutz vor API-Bans!
 });
 
-// FIXED: This now properly triggers the UI from food-detail.js
 function selectFood(id) {
     openFoodDetail(id); 
 }

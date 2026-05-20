@@ -52,7 +52,7 @@ function updateMacroDisplay(amountGrams) {
     detailFat.innerText = (currentActiveFood.f * multiplier).toFixed(1) + "g";
 
     // 2. Update the German Standard Table
-    tableHeaderAmount.innerText = `pro ${amountGrams}g / ml`;
+    tableHeaderAmount.innerText = `pro ${amountGrams} gramm`;
     tableKcal.innerText = Math.round(currentActiveFood.k * multiplier) + " kcal";
     tableFat.innerText = (currentActiveFood.f * multiplier).toFixed(1) + "g";
     // Fallback to 0 if sub-macros don't exist in the item
@@ -63,6 +63,23 @@ function updateMacroDisplay(amountGrams) {
     tableProtein.innerText = (currentActiveFood.p * multiplier).toFixed(1) + "g";
     // Salt is usually rounded to 2 decimal places
     tableSalt.innerText = ((currentActiveFood.sa || 0) * multiplier).toFixed(2) + "g"; 
+
+    // 3. Update the Macro Bar (percentages based on calories)
+    const carbsKcal = (currentActiveFood.c || 0) * 4;
+    const proteinKcal = (currentActiveFood.p || 0) * 4;
+    const fatKcal = (currentActiveFood.f || 0) * 9;
+    const totalMacroKcal = carbsKcal + proteinKcal + fatKcal;
+
+    let carbsPct = 0, proteinPct = 0, fatPct = 0;
+    if (totalMacroKcal > 0) {
+        carbsPct = (carbsKcal / totalMacroKcal) * 100;
+        proteinPct = (proteinKcal / totalMacroKcal) * 100;
+        fatPct = (fatKcal / totalMacroKcal) * 100;
+    }
+
+    document.getElementById('macro-bar-carbs').style.width = carbsPct + '%';
+    document.getElementById('macro-bar-protein').style.width = proteinPct + '%';
+    document.getElementById('macro-bar-fat').style.width = fatPct + '%';
 }
 
 // ... Keep the rest of your event listeners below this (amountInput, close button, save button)

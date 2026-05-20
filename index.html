@@ -109,26 +109,31 @@
 
             <div class="portion-input-container">
                 <input type="number" id="detail-amount" inputmode="decimal" value="100">
-                <span class="unit-label">grams</span>
+                <span class="unit-label">gramm</span>
             </div>
 
-            <div class="meal-selection-container">
-                <select id="detail-meal-type" class="meal-select">
-                    <option value="Frühstück">Frühstück</option>
-                    <option value="Mittagessen">Mittagessen</option>
-                    <option value="Abendessen">Abendessen</option>
-                    <option value="Snack">Snack</option>
-                </select>
+            <div class="custom-dropdown-container">
+                <div id="meal-select-box" class="meal-select-trigger">
+                    <span id="selected-meal-text">Frühstück</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                </div>
+                
+                <div id="meal-dropdown-options" class="meal-options-list" style="display: none;">
+                    <div class="meal-option" data-value="Frühstück">Frühstück</div>
+                    <div class="meal-option" data-value="Mittagessen">Mittagessen</div>
+                    <div class="meal-option" data-value="Abendessen">Abendessen</div>
+                    <div class="meal-option" data-value="Snack">Snack</div>
+                </div>
             </div>
-
-            <button id="save-to-diary-btn" class="save-btn">Tracken</button>
-
+            </div>
+                <button id="save-to-diary-btn" class="save-btn">Tracken</button>
+            </div>
             <div class="nutrition-table-container">
                 <table class="nutrition-table">
                     <thead>
                         <tr>
                             <th>Nährwerte</th>
-                            <th id="table-header-amount">pro 100 g / 100 ml</th>
+                            <th id="table-header-amount">pro 100 g</th>
                         </tr>
                     </thead>
                     <tbody>

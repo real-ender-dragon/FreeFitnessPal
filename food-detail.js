@@ -77,9 +77,14 @@ document.getElementById('save-to-diary-btn').addEventListener('click', async () 
     }
 
     const multiplier = amount / 100;
+    
+    // NEU: Den ausgewählten Wert aus dem Dropdown auslesen
+    const selectedMeal = selectedMealValue;
+
     const diaryEntry = {
         date: new Date().toISOString().split('T')[0], 
         timestamp: Date.now(),
+        meal: selectedMeal, // Speichert: Frühstück, Mittagessen, etc.
         foodId: currentActiveFood.i,
         name: currentActiveFood.n,
         amount: amount,
@@ -105,3 +110,31 @@ document.getElementById('save-to-diary-btn').addEventListener('click', async () 
         alert("Error saving to diary.");
     }
 });
+
+
+
+// Dropdown Logik
+const trigger = document.getElementById('meal-select-box');
+const optionsList = document.getElementById('meal-dropdown-options');
+const selectedText = document.getElementById('selected-meal-text');
+let selectedMealValue = "Frühstück"; // Standardwert
+
+// Menü öffnen/schließen
+trigger.addEventListener('click', () => {
+    optionsList.style.display = (optionsList.style.display === 'none') ? 'block' : 'none';
+});
+
+// Option wählen
+document.querySelectorAll('.meal-option').forEach(option => {
+    option.addEventListener('click', (e) => {
+        selectedMealValue = e.target.getAttribute('data-value');
+        selectedText.innerText = selectedMealValue;
+        optionsList.style.display = 'none';
+    });
+});
+
+// Beim Speichern den Wert verwenden
+// Ändere in deinem save-to-diary-btn Event Listener:
+// const selectedMeal = document.getElementById('detail-meal-type').value; 
+// ZU:
+// const selectedMeal = selectedMealValue;

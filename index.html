@@ -16,16 +16,105 @@
 </head>
 <body>
 
-    <div id="main-view" class="view-container" style="display: none;">
+    <div id="main-view" class="view-container">
         <header class="main-header">
-            <h1>Tagebuch</h1>
+            <h1>Heute</h1>
         </header>
-        <div id="ui-container"></div>
+        
+        <div class="diary-summary-container">
+            <div class="diary-compact-summary">
+                <div class="calories-showcase" style="margin-bottom: 20px;">
+                    <span id="diary-total-kcal" class="huge-calories">0</span>
+                    <span class="kcal-label">kcal konsumiert</span>
+                </div>
+                <div class="macros-grid" style="margin-bottom: 20px;">
+                    <div class="macro-box">
+                        <span class="macro-label">Kohlenhydrate</span>
+                        <span id="diary-total-c" class="macro-value carbs-color">0g</span>
+                    </div>
+                    <div class="macro-box">
+                        <span class="macro-label">Eiweiß</span>
+                        <span id="diary-total-p" class="macro-value protein-color">0g</span>
+                    </div>
+                    <div class="macro-box">
+                        <span class="macro-label">Fett</span>
+                        <span id="diary-total-f" class="macro-value fat-color">0g</span>
+                    </div>
+                </div>
+                <button id="toggle-diary-table-btn" class="action-btn" style="padding: 12px; font-size: 14px; background-color: #2C2C2E;">Alle Nährwerte anzeigen ▼</button>
+            </div>
+
+            <div id="diary-full-table-container" class="nutrition-table-container" style="display: none; margin-top: 16px; margin-bottom: 0;">
+                <table class="nutrition-table">
+                    <thead>
+                        <tr>
+                            <th>Nährwerte</th>
+                            <th>Gesamt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Brennwert</td><td id="diary-table-kcal">0 kcal</td></tr>
+                        <tr><td>Fett</td><td id="diary-table-fat">0g</td></tr>
+                        <tr class="sub-row"><td>davon gesättigte Fettsäuren</td><td id="diary-table-satfat">0g</td></tr>
+                        <tr><td>Kohlenhydrate</td><td id="diary-table-carbs">0g</td></tr>
+                        <tr class="sub-row"><td>davon Zucker</td><td id="diary-table-sugars">0g</td></tr>
+                        <tr><td>Ballaststoffe</td><td id="diary-table-fiber">0g</td></tr>
+                        <tr><td>Eiweiß</td><td id="diary-table-protein">0g</td></tr>
+                        <tr><td>Salz</td><td id="diary-table-salt">0g</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="diary-meals-container">
+            <!-- Frühstück -->
+            <div class="meal-section" id="meal-section-Frühstück">
+                <div class="meal-header">
+                    <h3>Frühstück</h3>
+                    <span class="meal-kcal" id="kcal-Frühstück">0 kcal</span>
+                </div>
+                <ul class="meal-items-list" id="list-Frühstück"></ul>
+                <button class="add-food-to-meal-btn" data-meal="Frühstück">+ Lebensmittel hinzufügen</button>
+            </div>
+
+            <!-- Mittagessen -->
+            <div class="meal-section" id="meal-section-Mittagessen">
+                <div class="meal-header">
+                    <h3>Mittagessen</h3>
+                    <span class="meal-kcal" id="kcal-Mittagessen">0 kcal</span>
+                </div>
+                <ul class="meal-items-list" id="list-Mittagessen"></ul>
+                <button class="add-food-to-meal-btn" data-meal="Mittagessen">+ Lebensmittel hinzufügen</button>
+            </div>
+
+            <!-- Abendessen -->
+            <div class="meal-section" id="meal-section-Abendessen">
+                <div class="meal-header">
+                    <h3>Abendessen</h3>
+                    <span class="meal-kcal" id="kcal-Abendessen">0 kcal</span>
+                </div>
+                <ul class="meal-items-list" id="list-Abendessen"></ul>
+                <button class="add-food-to-meal-btn" data-meal="Abendessen">+ Lebensmittel hinzufügen</button>
+            </div>
+
+            <!-- Snack -->
+            <div class="meal-section" id="meal-section-Snack">
+                <div class="meal-header">
+                    <h3>Snack</h3>
+                    <span class="meal-kcal" id="kcal-Snack">0 kcal</span>
+                </div>
+                <ul class="meal-items-list" id="list-Snack"></ul>
+                <button class="add-food-to-meal-btn" data-meal="Snack">+ Lebensmittel hinzufügen</button>
+            </div>
+        </div>
     </div>
 
 
-    <div id="search-view" class="view-container">
+    <div id="search-view" class="view-container" style="display: none;">
         <div class="search-header">
+            <button id="close-search-btn" class="icon-btn" style="margin-right: 8px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
             
             <div class="search-input-wrapper" style="margin-left: 0;">
                 <span class="search-icon">
@@ -192,13 +281,57 @@
             });
         }
 
-        // Isolate variables so they don't clash
+        // UI Event Listeners
         document.addEventListener('DOMContentLoaded', () => {
+            const indexMainView = document.getElementById('main-view');
             const indexSearchView = document.getElementById('search-view');
             const indexScannerView = document.getElementById('scanner-view');
+            const foodSearchInput = document.getElementById('food-search-input');
 
-            // Focus search bar on load
-            document.getElementById('food-search-input').focus();
+            // Expand Diary Table
+            const toggleTableBtn = document.getElementById('toggle-diary-table-btn');
+            const diaryTable = document.getElementById('diary-full-table-container');
+            if (toggleTableBtn && diaryTable) {
+                toggleTableBtn.addEventListener('click', () => {
+                    if (diaryTable.style.display === 'none') {
+                        diaryTable.style.display = 'block';
+                        toggleTableBtn.innerText = 'Weniger anzeigen ▲';
+                    } else {
+                        diaryTable.style.display = 'none';
+                        toggleTableBtn.innerText = 'Alle Nährwerte anzeigen ▼';
+                    }
+                });
+            }
+
+            // Add Food from Meal Sections
+            document.querySelectorAll('.add-food-to-meal-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const meal = e.target.getAttribute('data-meal');
+                    
+                    // Pre-select meal dropdown in detail view so when tracking it defaults correctly
+                    if (typeof selectedMealValue !== 'undefined') {
+                        selectedMealValue = meal;
+                        const mealTextEl = document.getElementById('selected-meal-text');
+                        if (mealTextEl) mealTextEl.innerText = meal;
+                    }
+
+                    indexMainView.style.display = 'none';
+                    indexSearchView.style.display = 'block';
+                    foodSearchInput.focus();
+                });
+            });
+
+            // Close Search View
+            const closeSearchBtn = document.getElementById('close-search-btn');
+            if (closeSearchBtn) {
+                closeSearchBtn.addEventListener('click', () => {
+                    indexSearchView.style.display = 'none';
+                    indexMainView.style.display = 'block';
+                    foodSearchInput.value = '';
+                    document.getElementById('search-results-list').innerHTML = '';
+                    if (typeof loadDiary === 'function') loadDiary();
+                });
+            }
 
             // Open Scanner
             document.getElementById('nav-scan-btn').addEventListener('click', () => {
@@ -227,6 +360,13 @@
                     }
                 }, 100);
             });
+            
+            // Diary logic initial load
+            setTimeout(() => {
+                if (typeof loadDiary === 'function') {
+                    loadDiary();
+                }
+            }, 100);
         });
     </script>
 </body>

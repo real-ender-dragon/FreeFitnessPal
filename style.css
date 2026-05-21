@@ -514,3 +514,92 @@ h1 {
     opacity: 0.8;
     transform: scale(0.98);
 }
+/* ==========================================
+   DIARY VIEW
+   ========================================== */
+.diary-summary-container {
+    background-color: #1C1C1E;
+    border-radius: 16px;
+    margin: 16px;
+    padding: 20px;
+}
+
+.diary-meals-container {
+    padding: 0 16px 40px 16px;
+}
+
+.meal-section {
+    background-color: #1C1C1E;
+    border-radius: 16px;
+    margin-bottom: 16px;
+    padding: 16px;
+}
+
+.meal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.meal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.meal-kcal {
+    font-size: 16px;
+    color: #8E8E93;
+    font-weight: 600;
+}
+
+.meal-items-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 12px 0;
+}
+
+.meal-items-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #2C2C2E;
+}
+
+.meal-items-list li:last-child {
+    border-bottom: none;
+}
+
+.diary-item-name {
+    font-size: 16px;
+    font-weight: 600;
+    display: block;
+}
+
+.diary-item-amount {
+    font-size: 13px;
+    color: #8E8E93;
+}
+
+.diary-item-kcal {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.add-food-to-meal-btn {
+    width: 100%;
+    background: transparent;
+    color: #32D74B;
+    border: none;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: left;
+    padding: 8px 0;
+    cursor: pointer;
+}
+
+.add-food-to-meal-btn:active {
+    opacity: 0.7;
+}

@@ -118,7 +118,11 @@ document.getElementById('save-to-diary-btn').addEventListener('click', async () 
         kcal: Math.round(currentActiveFood.k * multiplier),
         p: Math.round((currentActiveFood.p * multiplier) * 10) / 10,
         c: Math.round((currentActiveFood.c * multiplier) * 10) / 10,
-        f: Math.round((currentActiveFood.f * multiplier) * 10) / 10
+        f: Math.round((currentActiveFood.f * multiplier) * 10) / 10,
+        sf: Math.round(((currentActiveFood.sf || 0) * multiplier) * 10) / 10,
+        su: Math.round(((currentActiveFood.su || 0) * multiplier) * 10) / 10,
+        fi: Math.round(((currentActiveFood.fi || 0) * multiplier) * 10) / 10,
+        sa: Math.round(((currentActiveFood.sa || 0) * multiplier) * 100) / 100
     };
 
     try {
@@ -126,11 +130,15 @@ document.getElementById('save-to-diary-btn').addEventListener('click', async () 
         if (navigator.vibrate) navigator.vibrate(50);
         
         fdDetailView.style.display = 'none';
-        fdSearchView.style.display = 'block';
+        document.getElementById('main-view').style.display = 'block';
         amountInput.value = 100;
         
         document.getElementById('food-search-input').value = '';
         document.getElementById('search-results-list').innerHTML = '';
+        
+        if (typeof loadDiary === 'function') {
+            loadDiary();
+        }
         
     } catch (error) {
         console.error("Failed to save to diary:", error);

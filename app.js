@@ -139,6 +139,24 @@ let quaggaIsRunning = false;
 let lastScannedCode = "";
 let consecutiveMatches = 0;
 
+// Helper to strictly validate EAN barcodes (removes 99% of false positives)
+function isValidEAN(code) {
+    if (!code || (code.length !== 13 && code.length !== 8)) return false;
+    let sum = 0;
+    for (let i = 0; i < code.length - 1; i++) {
+        const digit = parseInt(code[i], 10);
+        let multiplier = 1;
+        if (code.length === 13) {
+            multiplier = (i % 2 === 0) ? 1 : 3;
+        } else {
+            multiplier = (i % 2 === 0) ? 3 : 1;
+        }
+        sum += digit * multiplier;
+    }
+    const checkDigit = (10 - (sum % 10)) % 10;
+    return checkDigit === parseInt(code[code.length - 1], 10);
+}
+
 function startScanner() {
     if (quaggaIsRunning) return;
 
@@ -149,30 +167,22 @@ function startScanner() {
             target: document.querySelector('#interactive'),
             constraints: {
                 facingMode: "environment",
-                // 1. RESOLUTION: Lower is faster. 
-                // 800x600 provides plenty of pixel density for barcodes but 
-                // requires 60% less math per frame than 720p.
-                width: { ideal: 800 },
-                height: { ideal: 600 },
-                advanced: [{ focusMode: "continuous" }] // Attempt to force native autofocus
+                // Higher resolution for better precision
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                advanced: [{ focusMode: "continuous" }]
             }
         },
-        // 2. LOCATOR OPTIMIZATION
+        frequency: 10, // Limit to 10 FPS to prevent CPU overload and lag
         locate: true,
         locator: {
-            halfSample: true, // CRITICAL: Downsamples the image before searching for the barcode
-            patchSize: "medium" // "medium" is usually the fastest balance for 800x600
+            halfSample: true,
+            patchSize: "large" // Larger patch size helps find barcodes faster in HD resolution
         },
-        // 3. MULTI-THREADING
-        // Spawns background Web Workers up to the max CPU cores available on the phone
         numOfWorkers: navigator.hardwareConcurrency ? navigator.hardwareConcurrency : 4,
-        
-        // 4. DECODER STRICTNESS
         decoder: {
-            // ONLY list the formats you strictly need. 
-            // Every extra reader adds a massive penalty to processing time.
             readers: ["ean_reader", "ean_8_reader"],
-            multiple: false // Stop searching the frame once one barcode is found
+            multiple: false
         }
     }, function(err) {
         if (err) {
@@ -183,6 +193,8 @@ function startScanner() {
 
         Quagga.start();
         quaggaIsRunning = true;
+        lastScannedCode = "";
+        consecutiveMatches = 0;
         Quagga.onDetected(onBarcodeDetected);
         
         // Optional: Torch logic can remain here
@@ -194,7 +206,10 @@ function onBarcodeDetected(result) {
     
     const code = result.codeResult.code;
 
-    // Fast-lock confirmation: We only require 2 consecutive matches to prevent false positives
+    // Strict validation to throw out false positives
+    if (!isValidEAN(code)) return;
+
+    // Require 3 consecutive matches for high precision
     if (code === lastScannedCode) {
         consecutiveMatches++;
     } else {
@@ -202,7 +217,7 @@ function onBarcodeDetected(result) {
         consecutiveMatches = 1;
     }
 
-    if (consecutiveMatches >= 2) { 
+    if (consecutiveMatches >= 3) { 
         stopScanner();
         
         // Trigger your UI changes and processing here
@@ -264,5 +279,75 @@ async function processBarcode(decodedText) {
         }
     } catch (err) {
         alert("Network error fetching barcode. You might be offline.");
+    }
+}
+
+// ==========================================
+// 4. DIARY LOGIC
+// ==========================================
+const MEALS = ["Frühstück", "Mittagessen", "Abendessen", "Snack"];
+let currentDate = new Date().toISOString().split('T')[0];
+
+async function loadDiary() {
+    try {
+        const entries = await db.diary.where('date').equals(currentDate).toArray();
+
+        let totals = { kcal: 0, p: 0, c: 0, f: 0, sf: 0, su: 0, fi: 0, sa: 0 };
+        let mealTotals = { "Frühstück": 0, "Mittagessen": 0, "Abendessen": 0, "Snack": 0 };
+
+        MEALS.forEach(m => {
+            const listEl = document.getElementById(`list-${m}`);
+            if(listEl) listEl.innerHTML = '';
+        });
+
+        entries.forEach(entry => {
+            totals.kcal += entry.kcal || 0;
+            totals.p += entry.p || 0;
+            totals.c += entry.c || 0;
+            totals.f += entry.f || 0;
+            totals.sf += entry.sf || 0;
+            totals.su += entry.su || 0;
+            totals.fi += entry.fi || 0;
+            totals.sa += entry.sa || 0;
+
+            if (mealTotals[entry.meal] !== undefined) {
+                mealTotals[entry.meal] += entry.kcal || 0;
+                
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <div>
+                        <span class="diary-item-name">${entry.name}</span>
+                        <span class="diary-item-amount">${entry.amount}g</span>
+                    </div>
+                    <div class="diary-item-kcal">${entry.kcal} kcal</div>
+                `;
+                document.getElementById(`list-${entry.meal}`).appendChild(li);
+            }
+        });
+
+        // Update UI Summary
+        document.getElementById('diary-total-kcal').innerText = Math.round(totals.kcal);
+        document.getElementById('diary-total-c').innerText = (Math.round(totals.c * 10) / 10) + "g";
+        document.getElementById('diary-total-p').innerText = (Math.round(totals.p * 10) / 10) + "g";
+        document.getElementById('diary-total-f').innerText = (Math.round(totals.f * 10) / 10) + "g";
+
+        // Update UI Full Table
+        document.getElementById('diary-table-kcal').innerText = Math.round(totals.kcal) + " kcal";
+        document.getElementById('diary-table-fat').innerText = (Math.round(totals.f * 10) / 10) + "g";
+        document.getElementById('diary-table-satfat').innerText = (Math.round(totals.sf * 10) / 10) + "g";
+        document.getElementById('diary-table-carbs').innerText = (Math.round(totals.c * 10) / 10) + "g";
+        document.getElementById('diary-table-sugars').innerText = (Math.round(totals.su * 10) / 10) + "g";
+        document.getElementById('diary-table-fiber').innerText = (Math.round(totals.fi * 10) / 10) + "g";
+        document.getElementById('diary-table-protein').innerText = (Math.round(totals.p * 10) / 10) + "g";
+        document.getElementById('diary-table-salt').innerText = (Math.round(totals.sa * 100) / 100) + "g";
+
+        // Update Meal Kcals
+        MEALS.forEach(m => {
+            const el = document.getElementById(`kcal-${m}`);
+            if(el) el.innerText = Math.round(mealTotals[m]) + " kcal";
+        });
+
+    } catch (e) {
+        console.error("Error loading diary:", e);
     }
 }

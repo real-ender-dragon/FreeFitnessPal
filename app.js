@@ -131,185 +131,96 @@ function selectFood(id) {
     openFoodDetail(id); 
 }
 
+//-----
+// High-Performance Quagga Script
+//-----
 
-// ==========================================
-// 3. BARCODE SCANNER LOGIC (Ultra-Fast Interlaced - FINAL PRO)
-// ==========================================
 let quaggaIsRunning = false;
-let torchOn = false;
 let lastScannedCode = "";
 let consecutiveMatches = 0;
 
-const angles = [0, 90]; 
-let currentAngleIndex = 0;
-
-let memoryCanvas = null;
-let memoryCtx = null;
-let animationFrameId = null;
-let isDecoding = false; 
-
-let lastScanTime = 0;
-const SCAN_INTERVAL = 80; // Drosselung auf entspannte ~12 FPS für den Akku
-
-function startScanner() {
+function startFastScanner() {
     if (quaggaIsRunning) return;
 
     Quagga.init({
         inputStream: {
             name: "Live",
             type: "LiveStream",
-            target: document.querySelector('#interactive'), 
+            target: document.querySelector('#interactive'),
             constraints: {
                 facingMode: "environment",
-                width: { ideal: 1280 },
-                height: { ideal: 720 }
+                // 1. RESOLUTION: Lower is faster. 
+                // 800x600 provides plenty of pixel density for barcodes but 
+                // requires 60% less math per frame than 720p.
+                width: { ideal: 800 },
+                height: { ideal: 600 },
+                advanced: [{ focusMode: "continuous" }] // Attempt to force native autofocus
             }
         },
-        locate: false, 
-        decoder: { 
-            // Quagga braucht diese Info, sonst crasht der Kamera-Aufbau
-            readers: ["ean_reader", "ean_8_reader"] 
-        } 
+        // 2. LOCATOR OPTIMIZATION
+        locate: true,
+        locator: {
+            halfSample: true, // CRITICAL: Downsamples the image before searching for the barcode
+            patchSize: "medium" // "medium" is usually the fastest balance for 800x600
+        },
+        // 3. MULTI-THREADING
+        // Spawns background Web Workers up to the max CPU cores available on the phone
+        numOfWorkers: navigator.hardwareConcurrency ? navigator.hardwareConcurrency : 4,
+        
+        // 4. DECODER STRICTNESS
+        decoder: {
+            // ONLY list the formats you strictly need. 
+            // Every extra reader adds a massive penalty to processing time.
+            readers: ["ean_reader", "ean_8_reader"],
+            multiple: false // Stop searching the frame once one barcode is found
+        }
     }, function(err) {
         if (err) {
             console.error("Scanner Error:", err);
             alert("Kamerafehler. Bitte Berechtigungen prüfen.");
             return;
         }
-        
-        // WICHTIG: Wir rufen Quagga.start() NICHT auf!
-        // Der Standard-Scanner bleibt aus. Die Kamera läuft aber!
+
+        Quagga.start();
         quaggaIsRunning = true;
+        Quagga.onDetected(onBarcodeDetected);
         
-        // Wir starten unseren eigenen High-Speed Loop
-        setupInterlacedInterception();
-
-        setTimeout(() => {
-            const track = Quagga.CameraAccess.getActiveTrack();
-            if (track && typeof track.getCapabilities === 'function' && track.getCapabilities().torch) {
-                document.getElementById('torch-btn').style.display = 'flex';
-            }
-        }, 500); 
+        // Optional: Torch logic can remain here
     });
 }
 
-function setupInterlacedInterception() {
-    const videoEl = document.querySelector('#interactive video');
-    if (!videoEl) return;
+function onBarcodeDetected(result) {
+    if (!result || !result.codeResult || !result.codeResult.code) return;
+    
+    const code = result.codeResult.code;
 
-    if (!memoryCanvas) {
-        memoryCanvas = document.createElement('canvas');
-        memoryCtx = memoryCanvas.getContext('2d', { willReadFrequently: true });
+    // Fast-lock confirmation: We only require 2 consecutive matches to prevent false positives
+    if (code === lastScannedCode) {
+        consecutiveMatches++;
+    } else {
+        lastScannedCode = code;
+        consecutiveMatches = 1;
     }
 
-    function processInterlacedLoop() {
-        if (!quaggaIsRunning) return; 
-
-        const now = Date.now();
+    if (consecutiveMatches >= 2) { 
+        stopFastScanner();
         
-        if (!isDecoding && (now - lastScanTime >= SCAN_INTERVAL)) {
-            // Warten, bis das Video auch WIRKLICH Bilddaten sendet
-            if (videoEl.readyState === videoEl.HAVE_CURRENT_DATA || videoEl.readyState === videoEl.HAVE_ENOUGH_DATA) {
-                
-                const vW = videoEl.videoWidth;
-                const vH = videoEl.videoHeight;
-                
-                // DER BUG-FIX: Scanne nur, wenn die Kamera echte Maße hat (> 0)
-                if (vW > 0 && vH > 0) {
-                    lastScanTime = now;
-                    const angle = angles[currentAngleIndex];
-                    extractAndDecodeScanline(videoEl, vW, vH, angle);
-                    currentAngleIndex = (currentAngleIndex + 1) % angles.length;
-                }
-            }
-        }
-        animationFrameId = requestAnimationFrame(processInterlacedLoop);
+        // Trigger your UI changes and processing here
+        document.getElementById('scanner-view').style.display = 'none';
+        document.getElementById('search-view').style.display = 'block';
+        processBarcode(code);
     }
-
-    animationFrameId = requestAnimationFrame(processInterlacedLoop);
 }
 
-function extractAndDecodeScanline(video, vW, vH, angle) {
-    const centerX = vW / 2;
-    const centerY = vH / 2;
-    
-    // Math.floor erzwingt ganze Zahlen, damit die Base64-URL nicht kaputtgeht
-    const sampleLength = Math.floor(Math.min(vW, vH) * 0.7); 
-    const sampleThickness = 10; 
-
-    if (sampleLength <= 0) return;
-
-    memoryCanvas.width = sampleLength;
-    memoryCanvas.height = sampleThickness;
-
-    memoryCtx.clearRect(0, 0, sampleLength, sampleThickness);
-    memoryCtx.save();
-    memoryCtx.translate(sampleLength / 2, sampleThickness / 2);
-    memoryCtx.rotate((angle * Math.PI) / 180);
-    
-    memoryCtx.drawImage(
-        video, 
-        centerX - sampleLength / 2, centerY - sampleThickness / 2, sampleLength, sampleThickness,
-        -sampleLength / 2, -sampleThickness / 2, sampleLength, sampleThickness
-    );
-    memoryCtx.restore();
-
-    // Wir konvertieren den Streifen in ein sauberes JPEG
-    const dataUrl = memoryCanvas.toDataURL('image/jpeg', 0.8);
-    isDecoding = true; 
-    
-    Quagga.decodeSingle({
-        decoder: { readers: ["ean_reader", "ean_8_reader"] },
-        locate: false,
-        numOfWorkers: 0, // EXTREM WICHTIG: Führt den Scan sofort (synchron) aus, ohne Worker-Overhead!
-        src: dataUrl 
-    }, function(result) {
-        isDecoding = false; 
-        
-        if(result && result.codeResult && result.codeResult.code) {
-            const code = result.codeResult.code;
-
-            if (code === lastScannedCode) {
-                consecutiveMatches++;
-            } else {
-                lastScannedCode = code;
-                consecutiveMatches = 1;
-            }
-
-            if (consecutiveMatches >= 2) { 
-                stopScanner();
-                document.getElementById('scanner-view').style.display = 'none';
-                document.getElementById('search-view').style.display = 'block';
-                processBarcode(code);
-            }
-        }
-    });
-}
-
-function stopScanner() {
+function stopFastScanner() {
     if (quaggaIsRunning) {
-        // Obwohl wir Quagga.start() nie gerufen haben, 
-        // schaltet stop() die Kameralinse sauber wieder ab.
         Quagga.stop();
+        Quagga.offDetected(onBarcodeDetected); // Crucial to prevent ghost scans/memory leaks
         quaggaIsRunning = false;
     }
-    if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-        animationFrameId = null;
-    }
-    document.getElementById('torch-btn').style.display = 'none';
-    torchOn = false;
+    
     consecutiveMatches = 0; 
     lastScannedCode = "";
-}
-
-function toggleFlash() {
-    const track = Quagga.CameraAccess.getActiveTrack();
-    if (track && typeof track.getCapabilities === 'function') {
-        torchOn = !torchOn;
-        track.applyConstraints({ advanced: [{ torch: torchOn }] })
-            .catch(e => console.log("Torch error:", e));
-    }
 }
 
 

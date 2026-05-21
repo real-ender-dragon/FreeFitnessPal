@@ -603,3 +603,19 @@ h1 {
 .add-food-to-meal-btn:active {
     opacity: 0.7;
 }
+
+/* Date Navigation Styles */
+.date-nav-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 16px;
+    margin-top: 20px;
+}
+
+.date-nav-header h1 {
+    margin-top: 0;
+    font-size: 20px;
+    flex-grow: 1;
+    text-align: center;
+}

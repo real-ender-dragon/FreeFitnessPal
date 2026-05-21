@@ -12,6 +12,7 @@ const detailCarbs = document.getElementById('detail-carbs');
 const detailProtein = document.getElementById('detail-protein');
 const detailFat = document.getElementById('detail-fat');
 const amountInput = document.getElementById('detail-amount');
+const favoriteIcon = document.getElementById('favorite-icon');
 
 // New Table Elements
 const tableHeaderAmount = document.getElementById('table-header-amount');
@@ -31,6 +32,16 @@ async function openFoodDetail(foodId) {
 
         amountInput.value = 100;
         detailName.innerText = currentActiveFood.n;
+        
+        // Update favorite icon state
+        if (currentActiveFood.fav === 1) {
+            favoriteIcon.setAttribute('fill', '#FF453A');
+            favoriteIcon.setAttribute('stroke', '#FF453A');
+        } else {
+            favoriteIcon.setAttribute('fill', 'none');
+            favoriteIcon.setAttribute('stroke', '#fff');
+        }
+
         updateMacroDisplay(100);
 
         document.querySelectorAll('.view-container').forEach(v => v.style.display = 'none');
@@ -94,6 +105,30 @@ document.getElementById('close-detail-btn').addEventListener('click', () => {
     fdSearchView.style.display = 'block';
 });
 
+// Toggle Favorite Logic
+document.getElementById('toggle-favorite-btn').addEventListener('click', async () => {
+    if (!currentActiveFood) return;
+    
+    // Toggle state
+    currentActiveFood.fav = currentActiveFood.fav === 1 ? 0 : 1;
+    
+    try {
+        await db.foods.put(currentActiveFood);
+        if (navigator.vibrate) navigator.vibrate(50);
+        
+        // Update UI immediately
+        if (currentActiveFood.fav === 1) {
+            favoriteIcon.setAttribute('fill', '#FF453A');
+            favoriteIcon.setAttribute('stroke', '#FF453A');
+        } else {
+            favoriteIcon.setAttribute('fill', 'none');
+            favoriteIcon.setAttribute('stroke', '#fff');
+        }
+    } catch (err) {
+        console.error("Failed to update favorite:", err);
+    }
+});
+
 document.getElementById('save-to-diary-btn').addEventListener('click', async () => {
     if (!currentActiveFood) return;
 
@@ -108,8 +143,13 @@ document.getElementById('save-to-diary-btn').addEventListener('click', async () 
     // NEU: Den ausgewählten Wert aus dem Dropdown auslesen
     const selectedMeal = selectedMealValue;
 
+    // Use the currently selected date from the Diary view (exposed in app.js)
+    const targetDate = typeof formatDateForDB === 'function' && typeof currentDate !== 'undefined' 
+        ? formatDateForDB(currentDate) 
+        : new Date().toISOString().split('T')[0];
+
     const diaryEntry = {
-        date: new Date().toISOString().split('T')[0], 
+        date: targetDate, 
         timestamp: Date.now(),
         meal: selectedMeal, // Speichert: Frühstück, Mittagessen, etc.
         foodId: currentActiveFood.i,
@@ -127,6 +167,13 @@ document.getElementById('save-to-diary-btn').addEventListener('click', async () 
 
     try {
         await db.diary.put(diaryEntry);
+        
+        // Mark as tracked in the food database
+        if (!currentActiveFood.t) {
+            currentActiveFood.t = 1;
+            await db.foods.put(currentActiveFood);
+        }
+
         if (navigator.vibrate) navigator.vibrate(50);
         
         fdDetailView.style.display = 'none';

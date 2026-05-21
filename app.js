@@ -133,14 +133,13 @@ function selectFood(id) {
 
 
 // ==========================================
-// 3. BARCODE SCANNER LOGIC (Ultra-Fast Interlaced - V2 PRO)
+// 3. BARCODE SCANNER LOGIC (Ultra-Fast Interlaced - FINAL PRO)
 // ==========================================
 let quaggaIsRunning = false;
 let torchOn = false;
 let lastScannedCode = "";
 let consecutiveMatches = 0;
 
-// OPTIMIERUNG 1: Nur noch Waagerecht und Senkrecht. Spart 50% Rechenleistung!
 const angles = [0, 90]; 
 let currentAngleIndex = 0;
 
@@ -149,9 +148,8 @@ let memoryCtx = null;
 let animationFrameId = null;
 let isDecoding = false; 
 
-// OPTIMIERUNG 2: Throttling. Scant alle 60ms (~16 FPS). Hält das Handy kühl und schnell.
 let lastScanTime = 0;
-const SCAN_INTERVAL = 60; 
+const SCAN_INTERVAL = 80; // Drosselung auf entspannte ~12 FPS für den Akku
 
 function startScanner() {
     if (quaggaIsRunning) return;
@@ -167,17 +165,23 @@ function startScanner() {
                 height: { ideal: 720 }
             }
         },
-        numOfWorkers: 0, 
         locate: false, 
-        decoder: { readers: [] } 
+        decoder: { 
+            // Quagga braucht diese Info, sonst crasht der Kamera-Aufbau
+            readers: ["ean_reader", "ean_8_reader"] 
+        } 
     }, function(err) {
         if (err) {
+            console.error("Scanner Error:", err);
             alert("Kamerafehler. Bitte Berechtigungen prüfen.");
             return;
         }
-        Quagga.start();
+        
+        // WICHTIG: Wir rufen Quagga.start() NICHT auf!
+        // Der Standard-Scanner bleibt aus. Die Kamera läuft aber!
         quaggaIsRunning = true;
-
+        
+        // Wir starten unseren eigenen High-Speed Loop
         setupInterlacedInterception();
 
         setTimeout(() => {
@@ -203,13 +207,20 @@ function setupInterlacedInterception() {
 
         const now = Date.now();
         
-        // Das Schloss kombiniert mit dem 60ms-Timer
         if (!isDecoding && (now - lastScanTime >= SCAN_INTERVAL)) {
+            // Warten, bis das Video auch WIRKLICH Bilddaten sendet
             if (videoEl.readyState === videoEl.HAVE_CURRENT_DATA || videoEl.readyState === videoEl.HAVE_ENOUGH_DATA) {
-                lastScanTime = now;
-                const angle = angles[currentAngleIndex];
-                extractAndDecodeScanline(videoEl, angle);
-                currentAngleIndex = (currentAngleIndex + 1) % angles.length;
+                
+                const vW = videoEl.videoWidth;
+                const vH = videoEl.videoHeight;
+                
+                // DER BUG-FIX: Scanne nur, wenn die Kamera echte Maße hat (> 0)
+                if (vW > 0 && vH > 0) {
+                    lastScanTime = now;
+                    const angle = angles[currentAngleIndex];
+                    extractAndDecodeScanline(videoEl, vW, vH, angle);
+                    currentAngleIndex = (currentAngleIndex + 1) % angles.length;
+                }
             }
         }
         animationFrameId = requestAnimationFrame(processInterlacedLoop);
@@ -218,19 +229,15 @@ function setupInterlacedInterception() {
     animationFrameId = requestAnimationFrame(processInterlacedLoop);
 }
 
-function extractAndDecodeScanline(video, angle) {
-    const vW = video.videoWidth;
-    const vH = video.videoHeight;
-    if (!vW || !vH) return;
-
+function extractAndDecodeScanline(video, vW, vH, angle) {
     const centerX = vW / 2;
     const centerY = vH / 2;
     
-    // OPTIMIERUNG 3: Kürzere Linie (Nur die Mitte wird gescannt, ignoriert den Hintergrund)
-    const sampleLength = Math.min(vW, vH) * 0.7; 
-    
-    // OPTIMIERUNG 4: 10 Pixel dick! Filtert Bildrauschen und Reflexionen auf der Verpackung heraus.
+    // Math.floor erzwingt ganze Zahlen, damit die Base64-URL nicht kaputtgeht
+    const sampleLength = Math.floor(Math.min(vW, vH) * 0.7); 
     const sampleThickness = 10; 
+
+    if (sampleLength <= 0) return;
 
     memoryCanvas.width = sampleLength;
     memoryCanvas.height = sampleThickness;
@@ -247,14 +254,14 @@ function extractAndDecodeScanline(video, angle) {
     );
     memoryCtx.restore();
 
-    // OPTIMIERUNG 5: Geringere JPEG-Qualität (0.5) macht das Encoding in Base64 blitzschnell
-    const dataUrl = memoryCanvas.toDataURL('image/jpeg', 0.5);
-    
+    // Wir konvertieren den Streifen in ein sauberes JPEG
+    const dataUrl = memoryCanvas.toDataURL('image/jpeg', 0.8);
     isDecoding = true; 
     
     Quagga.decodeSingle({
         decoder: { readers: ["ean_reader", "ean_8_reader"] },
         locate: false,
+        numOfWorkers: 0, // EXTREM WICHTIG: Führt den Scan sofort (synchron) aus, ohne Worker-Overhead!
         src: dataUrl 
     }, function(result) {
         isDecoding = false; 
@@ -281,6 +288,8 @@ function extractAndDecodeScanline(video, angle) {
 
 function stopScanner() {
     if (quaggaIsRunning) {
+        // Obwohl wir Quagga.start() nie gerufen haben, 
+        // schaltet stop() die Kameralinse sauber wieder ab.
         Quagga.stop();
         quaggaIsRunning = false;
     }

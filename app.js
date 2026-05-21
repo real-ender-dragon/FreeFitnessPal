@@ -139,7 +139,7 @@ let quaggaIsRunning = false;
 let lastScannedCode = "";
 let consecutiveMatches = 0;
 
-function startFastScanner() {
+function startScanner() {
     if (quaggaIsRunning) return;
 
     Quagga.init({
@@ -203,7 +203,7 @@ function onBarcodeDetected(result) {
     }
 
     if (consecutiveMatches >= 2) { 
-        stopFastScanner();
+        stopScanner();
         
         // Trigger your UI changes and processing here
         document.getElementById('scanner-view').style.display = 'none';
@@ -212,7 +212,7 @@ function onBarcodeDetected(result) {
     }
 }
 
-function stopFastScanner() {
+function stopScanner() {
     if (quaggaIsRunning) {
         Quagga.stop();
         Quagga.offDetected(onBarcodeDetected); // Crucial to prevent ghost scans/memory leaks
